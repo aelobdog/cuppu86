@@ -10,6 +10,21 @@
 
 /* cpu */
 typedef struct cpu {
+   /* registers */
+   u16 ax; /* accumulator   */
+   u16 bx; /* base index    */
+   u16 cx; /* count         */
+   u16 dx; /* data          */
+   u16 sp; /* stack pointer */
+   u16 ip; /* instr pointer */
+   u16 bp; /* base pointer  */
+   u16 si; /* source index  */
+   u16 di; /* destn index   */
+   u16 cs; /* code segment  */
+   u16 ds; /* data segment  */
+   u16 ss; /* stack segment */
+   u16 es; /* extra segment */
+   u16 flags;
 } cpu;
 
 /* cpu procs */
