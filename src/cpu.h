@@ -6,7 +6,7 @@
 #include "types.h"
 
 /* defines */
-#define MEMORY_SIZE 134217728 /* 128 MiB */
+#define MEMORY_SIZE 1048576 /* 1 MiB */
 
 /* cpu */
 typedef struct cpu {
@@ -34,5 +34,26 @@ void cpu_setmem (cpu* c, u8* mem);
 u32  cpu_fetch  (cpu* c);
 void cpu_exec   (cpu* c, u32 inst);
 void cpu_dump   (cpu* c);
+
+/* operations 
+========================================== */
+/* move */ 
+   /* immediate */
+   void mov_al_i(u8  val);
+   void mov_cl_i(u8  val);
+   void mov_dl_i(u8  val);
+   void mov_bl_i(u8  val);
+   void mov_ah_i(u8  val);
+   void mov_ch_i(u8  val);
+   void mov_dh_i(u8  val);
+   void mov_bh_i(u8  val);
+   void mov_ax_i(u16 val);
+   void mov_cx_i(u16 val);
+   void mov_dx_i(u16 val);
+   void mov_bx_i(u16 val);
+   void mov_sp_i(u16 val);
+   void mov_bp_i(u16 val);
+   void mov_si_i(u16 val);
+   void mov_di_i(u16 val);
 
 #endif
