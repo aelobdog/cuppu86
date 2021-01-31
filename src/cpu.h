@@ -39,21 +39,21 @@ void cpu_dump   (cpu* c);
 ========================================== */
 /* move */ 
    /* immediate */
-   void mov_al_i(u8  val);
-   void mov_cl_i(u8  val);
-   void mov_dl_i(u8  val);
-   void mov_bl_i(u8  val);
-   void mov_ah_i(u8  val);
-   void mov_ch_i(u8  val);
-   void mov_dh_i(u8  val);
-   void mov_bh_i(u8  val);
-   void mov_ax_i(u16 val);
-   void mov_cx_i(u16 val);
-   void mov_dx_i(u16 val);
-   void mov_bx_i(u16 val);
-   void mov_sp_i(u16 val);
-   void mov_bp_i(u16 val);
-   void mov_si_i(u16 val);
-   void mov_di_i(u16 val);
+   void mov_al_i(cpu* c, u8  val);
+   void mov_cl_i(cpu* c, u8  val);
+   void mov_dl_i(cpu* c, u8  val);
+   void mov_bl_i(cpu* c, u8  val);
+   void mov_ah_i(cpu* c, u8  val);
+   void mov_ch_i(cpu* c, u8  val);
+   void mov_dh_i(cpu* c, u8  val);
+   void mov_bh_i(cpu* c, u8  val);
+   void mov_ax_i(cpu* c, u16 val);
+   void mov_cx_i(cpu* c, u16 val);
+   void mov_dx_i(cpu* c, u16 val);
+   void mov_bx_i(cpu* c, u16 val);
+   void mov_sp_i(cpu* c, u16 val);
+   void mov_bp_i(cpu* c, u16 val);
+   void mov_si_i(cpu* c, u16 val);
+   void mov_di_i(cpu* c, u16 val);
 
 #endif

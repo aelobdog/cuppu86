@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include "cpu.h"
 
+/* cpu procs 
+============================================== */
+
 /* initialize cpu state */
 void cpu_init (cpu *c) {
 }
 
-/* reset reg[0] to 0 */
+/* reset cpu registers */
 void cpu_reset(cpu *c) {
 }
 
@@ -15,6 +18,7 @@ void cpu_setmem(cpu *c, u8 *mem) {
 
 /* fetch instruction from ram */
 u32 cpu_fetch(cpu *c) {
+   return 0; /* temporary */
 }
 
 /* execute instruction */
@@ -23,4 +27,83 @@ void cpu_exec(cpu *c, u32 inst) {
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {
+}
+
+/* operations 
+============================================== */
+
+/*  @changes : this code can be made more compact
+ *             by making a common function "mov_i"
+ *             and giving it additional parameters
+ *             "regname" and "h/l/x/NULL" to cover
+ *             all cases and reduce the 16 funcs
+ *             below into just 1.
+ *
+ *             + : make code more concise.
+ *             - : will have to use strcmp which
+ *                 will make the funtion slower.
+ */
+
+void mov_al_i(cpu* c, u8  val){
+   c->ax = (c->ax & 0xff00) + (u16)val;
+}
+
+void mov_cl_i(cpu* c, u8  val){
+   c->cx = (c->cx & 0xff00) + (u16)val;
+}
+
+void mov_dl_i(cpu* c, u8  val){
+   c->dx = (c->dx & 0xff00) + (u16)val;
+}
+
+void mov_bl_i(cpu* c, u8  val){
+   c->bx = (c->bx & 0xff00) + (u16)val;
+}
+
+void mov_ah_i(cpu* c, u8  val){
+   c->ax = (c->ax & 0xff) + ((u16)val << 8);
+}
+
+void mov_ch_i(cpu* c, u8  val){
+   c->cx = (c->cx & 0xff) + ((u16)val << 8);
+}
+
+void mov_dh_i(cpu* c, u8  val){
+   c->dx = (c->dx & 0xff) + ((u16)val << 8);
+}
+
+void mov_bh_i(cpu* c, u8  val){
+   c->bx = (c->bx & 0xff) + ((u16)val << 8);
+}
+
+void mov_ax_i(cpu* c, u16 val){
+   c->ax = val;
+}
+
+void mov_cx_i(cpu* c, u16 val){
+   c->cx = val;
+}
+
+void mov_dx_i(cpu* c, u16 val){
+   c->dx = val;
+}
+
+void mov_bx_i(cpu* c, u16 val){
+   c->bx = val;
+}
+
+void mov_sp_i(cpu* c, u16 val){
+   c->sp = val;
+}
+
+void mov_bp_i(cpu* c, u16 val){
+   c->bp = val;
+}
+
+void mov_si_i(cpu* c, u16 val){
+   c->si = val;
+}
+
+void mov_di_i(cpu* c, u16 val){
+   c->di = val;
 }
