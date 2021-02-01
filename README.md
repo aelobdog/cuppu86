@@ -9,7 +9,7 @@ I'm a third year student currently and as part of my coursework, I have taken a 
 Since the main goal of the Cuppu86 project is to understand how the processors like the 8086 work, there is little to no importance given to make the codebase clean/elegant/whatever.
 
 ## License
- Copyright (C) 2021 Ashwin Godbole
+    Copyright (C) 2021 Ashwin Godbole, Samarth Krishna Murthy
  
     Cuppu86 is free software: you can redistribute it and/or modify it under the
     terms of the GNU General Public License as published by the Free Software
