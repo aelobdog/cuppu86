@@ -9,12 +9,11 @@
 
 /* function that creates MAX_MEMORY number
  * of bytes and returns a pointer it.
- */ 
-u8* mem_create();
-
-/* code that uses mem_create is responsible
+ * 
+ * code that uses mem_create is responsible
  * for deallocating the memory that was
  * allocated using mem_create.
  */
+u8* mem_create();
 
 #endif
