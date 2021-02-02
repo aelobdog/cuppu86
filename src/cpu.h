@@ -40,4 +40,11 @@ void cpu_dump   (cpu* c);
    void mov_r16i(cpu* c, reg r, u16 val);
    void mov_r8i(cpu* c, reg r, u8 val);
 
+/* misc. helper functions */
+   /* address with base and offset
+    * returns a u32 but in reality it is a
+    * 20 bit address to be able to access
+    * a max of 1Mb space.                  */
+   u32 base_offset(u16 base, u16 offset);
+
 #endif

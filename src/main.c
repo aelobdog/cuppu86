@@ -12,5 +12,7 @@ int main(int argc, char* argv[]) {
    mov_r8i(c, CH, 0x22);
 
    cpu_dump(c);
+
+   printf("base : offset = %x\n", base_offset(0x1111, 0xFFFF));
    return 0;
 }

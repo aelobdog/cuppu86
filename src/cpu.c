@@ -65,3 +65,12 @@ void mov_r8i(cpu *c, reg r, u8 val) {
       case DH: c->dx = (c->dx & 0xff) + ((u16)val << 8); break; /* B7 */
    }
 }
+
+u32 base_offset(u16 base, u16 offset) {
+   u32 final_addr;
+   final_addr = base;
+   final_addr = final_addr << 4;
+   final_addr = final_addr + offset;
+   final_addr = final_addr & 0xFFFFF;
+   return final_addr;
+}
