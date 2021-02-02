@@ -9,11 +9,16 @@ void cpu_init (cpu *c) {
 }
 
 /* reset cpu registers */
-void cpu_reset(cpu *c) {
+void cpu_init_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es) {
+   c->cs = cs;
+   c->ds = ds;
+   c->ss = ss;
+   c->es = es;
 }
 
 /* assign memory to RAM */
 void cpu_setmem(cpu *c, u8 *mem) {
+   c->mem = mem;
 }
 
 /* fetch instruction from ram */
@@ -73,4 +78,18 @@ u32 base_offset(u16 base, u16 offset) {
    final_addr = final_addr + offset;
    final_addr = final_addr & 0xFFFFF;
    return final_addr;
+}
+
+u8 cpu_read_u8_at(cpu* c, u32 addr) {
+   u8 data;
+   data = c->mem[addr];
+   return data;
+}
+
+/* little endian */
+u16 cpu_read_u16_at(cpu* c, u32 addr) {
+   u16 data;
+   data = c->mem[addr];
+   data = data + ((c->mem[addr + 1]) << 8);
+   return data;
 }

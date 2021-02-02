@@ -23,15 +23,19 @@ typedef struct cpu {
    u16 ss; /* stack segment */
    u16 es; /* extra segment */
    u16 flags;
+   u8* mem; /* main memory */
 } cpu;
 
 /* cpu procs */
-void cpu_init   (cpu* c);
-void cpu_reset  (cpu* c);
+void cpu_init (cpu* c);
+void cpu_init_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem (cpu* c, u8* mem); 
-u32  cpu_fetch  (cpu* c);
-void cpu_exec   (cpu* c, u32 inst);
-void cpu_dump   (cpu* c);
+u32  cpu_fetch (cpu* c);
+void cpu_exec (cpu* c, u32 inst);
+void cpu_dump (cpu* c);
+
+u8  cpu_read_u8_at(cpu* c, u32 addr);
+u16 cpu_read_u16_at(cpu* c, u32 addr);
 
 /* operations 
 ========================================== */
