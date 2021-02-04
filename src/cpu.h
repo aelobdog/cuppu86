@@ -1,6 +1,13 @@
 #ifndef CPU_H
 #define CPU_H
 
+/* segment starting addresses */
+/* 64 kb blocks */
+#define DS_START 0x2000  
+#define CS_START 0x3000
+#define SS_START 0x5000
+#define ES_START 0x7000
+
 /* includes */
 #include <stdint.h>
 #include "types.h"
