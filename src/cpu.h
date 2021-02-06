@@ -35,7 +35,8 @@ typedef struct cpu {
 
 /* cpu procs */
 void cpu_init (cpu* c);
-void cpu_init_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
+void cpu_init_segments(cpu *c);
+void cpu_set_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem (cpu* c, u8* mem); 
 u32  cpu_fetch (cpu* c);
 void cpu_exec (cpu* c, u32 inst);
@@ -47,12 +48,20 @@ u16 cpu_read_u16_at(cpu* c, u32 addr);
 /* operations 
 ========================================== */
 /* move */ 
-   /* immediate */
-   void mov_r16i(cpu* c, reg r, u16 val);
-   void mov_r8i(cpu* c, reg r, u8 val);
-   /* register-register */
+   /* register <- immediate */
+   void mov_r16i(cpu* c, reg dst, u16 val);
+   void mov_r8i(cpu* c, reg dst, u8 val);
+   /* register <- register */
    void mov_r16r(cpu* c, reg dst, reg src);
    void mov_r8r(cpu* c, reg dst, reg src);
+   /* register <- memory */
+   void mov_rm(
+      cpu* c, 
+      reg dst, 
+      reg index,
+      /* if offset id u8, cast it to u16 */
+      u16 offset
+   );
 
 /* misc. helper functions */
    /* address with base and offset
