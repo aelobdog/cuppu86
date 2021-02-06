@@ -54,21 +54,51 @@ void mov_r16i(cpu *c, reg r, u16 val) {
    case SP: c->sp = val; break; /* BC */ 
    case BP: c->bp = val; break; /* BD */ 
    case SI: c->si = val; break; /* BE */ 
-   case DI: c->di = val; break; /* BF */ 
+   case DI: c->di = val; break; /* BF */
+   default: break; /* should never come here */
    }
 }
 
 void mov_r8i(cpu *c, reg r, u8 val) {
    switch (r) {
       case AL: c->ax = (c->ax & 0xff00) + (u16)val; break; /* B0 */
-      case BL: c->bx = (c->bx & 0xff00) + (u16)val; break; /* B1 */
-      case CL: c->cx = (c->cx & 0xff00) + (u16)val; break; /* B2 */
-      case DL: c->dx = (c->dx & 0xff00) + (u16)val; break; /* B3 */
+      case CL: c->cx = (c->cx & 0xff00) + (u16)val; break; /* B1 */
+      case DL: c->dx = (c->dx & 0xff00) + (u16)val; break; /* B2 */
+      case BL: c->bx = (c->bx & 0xff00) + (u16)val; break; /* B3 */
       case AH: c->ax = (c->ax & 0xff) + ((u16)val << 8); break; /* B4 */
-      case BH: c->bx = (c->bx & 0xff) + ((u16)val << 8); break; /* B5 */
-      case CH: c->cx = (c->cx & 0xff) + ((u16)val << 8); break; /* B6 */
-      case DH: c->dx = (c->dx & 0xff) + ((u16)val << 8); break; /* B7 */
+      case CH: c->cx = (c->cx & 0xff) + ((u16)val << 8); break; /* B5 */
+      case DH: c->dx = (c->dx & 0xff) + ((u16)val << 8); break; /* B6 */
+      case BH: c->bx = (c->bx & 0xff) + ((u16)val << 8); break; /* B7 */
+      default: break; /* should never come here */
    }
+}
+
+void mov_r16r(cpu* c, reg dst, reg src) {
+   u16 src_val;
+   switch (src) {
+      case AX: src_val = c->ax; break;
+      case CX: src_val = c->cx; break;
+      case DX: src_val = c->dx; break;
+      case BX: src_val = c->bx; break;
+      default: break; /* should never come here */
+   }
+   mov_r16i(c, dst, src_val);
+}
+
+void mov_r8r(cpu* c, reg dst, reg src) {
+   u8 src_val;
+   switch (src) {
+      case AL: src_val = (u8)(c->ax & 0xff); break;
+      case CL: src_val = (u8)(c->cx & 0xff); break;
+      case DL: src_val = (u8)(c->dx & 0xff); break;
+      case BL: src_val = (u8)(c->bx & 0xff); break;
+      case AH: src_val = (u8)((c->ax & 0xff00) >> 8); break;
+      case CH: src_val = (u8)((c->cx & 0xff00) >> 8); break;
+      case DH: src_val = (u8)((c->dx & 0xff00) >> 8); break;
+      case BH: src_val = (u8)((c->bx & 0xff00) >> 8); break;
+      default: break; /* should never come here */
+   }
+   mov_r8i(c, dst, src_val);
 }
 
 u32 base_offset(u16 base, u16 offset) {

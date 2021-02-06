@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
    c = (cpu*) calloc(1, sizeof(cpu));
 
    mov_r16i(c, AX, 0x1622);
-   mov_r8i(c, BL, 0x22);
+   /* mov_r8i(c, BL, 0x22); */
    mov_r8i(c, CH, 0x22);
 
    cpu_dump(c);
@@ -27,6 +27,10 @@ int main(int argc, char* argv[]) {
 
    printf("at %x in mem lies a u8  : %x\n", addr, cpu_read_u8_at(c, addr));
    printf("at %x in mem lies a u16 : %x\n", addr, cpu_read_u16_at(c, addr));
+
+   mov_r16r(c, BX, AX);
+   mov_r8r(c, CL, CH);
+   cpu_dump(c);
 
    return 0;
 }

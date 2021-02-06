@@ -50,6 +50,9 @@ u16 cpu_read_u16_at(cpu* c, u32 addr);
    /* immediate */
    void mov_r16i(cpu* c, reg r, u16 val);
    void mov_r8i(cpu* c, reg r, u8 val);
+   /* register-register */
+   void mov_r16r(cpu* c, reg dst, reg src);
+   void mov_r8r(cpu* c, reg dst, reg src);
 
 /* misc. helper functions */
    /* address with base and offset
