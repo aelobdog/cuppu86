@@ -44,16 +44,21 @@ void cpu_dump (cpu* c);
 
 u8  cpu_read_u8_at(cpu* c, u32 addr);
 u16 cpu_read_u16_at(cpu* c, u32 addr);
+void cpu_write_u8_at(cpu* c, u32 addr, u8 data);
+void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
 
 /* operations 
 ========================================== */
 /* move */ 
+
    /* register <- immediate */
    void mov_r16i(cpu* c, reg dst, u16 val);
    void mov_r8i(cpu* c, reg dst, u8 val);
+
    /* register <- register */
    void mov_r16r(cpu* c, reg dst, reg src);
    void mov_r8r(cpu* c, reg dst, reg src);
+
    /* register <- memory */
    void mov_rm(
       cpu* c, 
@@ -62,6 +67,9 @@ u16 cpu_read_u16_at(cpu* c, u32 addr);
       /* if offset id u8, cast it to u16 */
       u16 offset
    );
+
+   /* memory <- register */
+   void mov_mr(cpu* c, u32 addr, reg src);
 
 /* misc. helper functions */
    /* address with base and offset

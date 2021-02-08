@@ -225,6 +225,78 @@ void mov_rm(cpu* c, reg dst, reg index, u16 offset) {
    }
 }
 
+void mov_mr(cpu* c, u32 addr, reg src) {
+   u8 src_u8; /* required only for 8 bit registers */
+
+   switch(src) {
+   /* ---------------------------------- */
+   case AL: 
+      src_u8 = (u8)(c->ax & 0xff);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case BL: 
+      src_u8 = (u8)(c->bx & 0xff);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case CL: 
+      src_u8 = (u8)(c->cx & 0xff);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case DL: 
+      src_u8 = (u8)(c->dx & 0xff);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   /* ---------------------------------- */
+   case AH:
+      src_u8 = (u8)((c->ax & 0xff00) >> 8);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case BH:
+      src_u8 = (u8)((c->bx & 0xff00) >> 8);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case CH:
+      src_u8 = (u8)((c->cx & 0xff00) >> 8);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   case DH:
+      src_u8 = (u8)((c->dx & 0xff00) >> 8);
+      cpu_write_u8_at(c, addr, src_u8);
+      break;
+   /* ---------------------------------- */
+   case AX:
+      cpu_write_u16_at(c, addr, c->ax);
+      break;
+   case BX:
+      cpu_write_u16_at(c, addr, c->bx);
+      break;
+   case CX:
+      cpu_write_u16_at(c, addr, c->cx);
+      break;
+   case DX:
+      cpu_write_u16_at(c, addr, c->dx);
+      break;
+   /* ---------------------------------- */
+   case SI:
+      cpu_write_u16_at(c, addr, c->si);
+      break;
+   case DI:
+      cpu_write_u16_at(c, addr, c->di);
+      break;
+   case SP:
+      cpu_write_u16_at(c, addr, c->sp);
+      break;
+   case BP:
+      cpu_write_u16_at(c, addr, c->bp);
+      break;
+   case IP:
+      cpu_write_u16_at(c, addr, c->ip);
+      break;
+   /* ---------------------------------- */
+   default : return; /* should never come here */
+   }
+}
+
 u32 base_offset(u16 base, u16 offset) {
    u32 final_addr;
    final_addr = base;
@@ -246,4 +318,14 @@ u16 cpu_read_u16_at(cpu* c, u32 addr) {
    data = c->mem[addr];
    data = data + ((c->mem[addr + 1]) << 8);
    return data;
+}
+
+void cpu_write_u8_at(cpu* c, u32 addr, u8 data) {
+   c->mem[addr] = data;
+}
+
+/* little endian */
+void cpu_write_u16_at(cpu* c, u32 addr, u16 data) {
+   c->mem[addr] = (u8)(data & 0xff);
+   c->mem[addr + 1] = (u8)((data & 0xff00) >> 8);
 }
