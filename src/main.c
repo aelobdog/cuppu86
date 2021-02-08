@@ -6,29 +6,57 @@
 
 void test_mov_r16i(cpu* c) {
    mov_r16i(c, AX, 0x1622);
-   printf("mov_r16i test: ");
+   printf("mov_r16i test     : ");
    if(c->ax == 0x1622) printf("PASSED\n");
    else printf("FAILED\n");
 }
 
 void test_mov_r8i(cpu* c) {
-   mov_r16i(c, CH, 0x22);
-   printf("mov_r8i test: ");
+   mov_r8i(c, CH, 0x22);
+   printf("mov_r8i test      : ");
    if(((c->cx & 0xff00) >> 8) == 0x22) printf("PASSED\n");
    else printf("FAILED\n");
 }
 
-void test_mov_r16r(cpu* c){
+void test_mov_r16r(cpu* c) {
    mov_r16r(c, BX, AX);
-   printf("mov_r16r test: ");
+   printf("mov_r16r test     : ");
    if(c->bx == c->ax) printf("PASSED\n");
    else printf("FAILED\n");
 }
 
-void test_mov_r8r(cpu* c){
-   mov_r8r(c, CL, CH);
-   printf("mov_r8r test: ");
-   if(((c->cx & 0xff) == (c->cx & 0xff00) >> 8)) printf("PASSED\n");
+void test_mov_r8r(cpu* c) {
+   mov_r8r(c, DL, CH);
+   printf("mov_r8r test      : ");
+   if(((c->dx & 0xff) == (c->cx & 0xff00) >> 8)) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_rm_16(cpu* c) {
+   mov_rm_new(c, SP, base_offset(0x2000, 0x100));
+   printf("mov_rm_16 test    : ");
+   if(c->sp == 0x6141) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_rm_8(cpu* c) {
+   mov_rm_new(c, DH, base_offset(0x2000, 0x100));
+   printf("mov_rm_8 test     : ");
+   if(((c->dx & 0xff00) >> 8) == 0x41) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_mr_16(cpu* c){
+   mov_mr(c, base_offset(0x1000, 0x100), DX);
+   printf("mov_mr_16 test    : ");
+   if(c->dx == cpu_read_u16_at(c, base_offset(0x1000, 0x100))) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_mr_8(cpu* c){
+   mov_mr(c, base_offset(0x1000, 0x104), CH);
+   printf("mov_mr_8 test     : ");
+   if(((c->cx & 0xff00) >> 8 == cpu_read_u8_at(c, base_offset(0x1000, 0x104)))) printf("PASSED\n");
    else printf("FAILED\n");
 }
 
@@ -37,28 +65,26 @@ int main(int argc, char* argv[]) {
    u8 mem[MAX_MEMORY];
    cpu* c;
    c = (cpu*) calloc(1, sizeof(cpu));
-
-   mov_r16i(c, AX, 0x1622);
-   /* mov_r8i(c, BL, 0x22); */
-   mov_r8i(c, CH, 0x22);
-
+   
+   /* Initial Register Values */
    cpu_dump(c);
 
-   addr = base_offset(0x1111, 0xFFFF);
-
+   addr = base_offset(0x2000, 0x100);
    mem[addr] = (u8)0x41;
    mem[addr+1] = (u8)0x61;
-
-   printf("at %x in mem lies %c\n", addr, mem[addr]);
-
    cpu_setmem(c, mem);
+   
+   /* Tests */
+   test_mov_r16i(c);
+   test_mov_r8i(c);
+   test_mov_r16r(c);
+   test_mov_r8r(c);
+   test_mov_rm_16(c);
+   test_mov_rm_8(c);
+   test_mov_mr_16(c);
+   test_mov_mr_8(c);
 
-   printf("at %x in mem lies a u8  : %x\n", addr, cpu_read_u8_at(c, addr));
-   printf("at %x in mem lies a u16 : %x\n", addr, cpu_read_u16_at(c, addr));
-
-   mov_r16r(c, BX, AX);
-   mov_r8r(c, CL, CH);
    cpu_dump(c);
-
+   cpu_dump_mem(c, 0x10100, 0x10110);
    return 0;
 }

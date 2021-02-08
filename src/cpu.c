@@ -40,14 +40,27 @@ void cpu_exec(cpu *c, u32 inst) {
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {
-   printf("AX: %4x H\n", c->ax);
+   printf("\nAX: %4x H\n", c->ax);
    printf("BX: %4x H\n", c->bx);
    printf("CX: %4x H\n", c->cx);
    printf("DX: %4x H\n", c->dx);
    printf("SP: %4x H\n", c->sp);
    printf("BP: %4x H\n", c->bp);
    printf("SI: %4x H\n", c->si);
-   printf("DI: %4x H\n", c->di);
+   printf("DI: %4x H\n\n", c->di);
+}
+
+void cpu_dump_mem(cpu* c, u32 start_addr, u32 end_addr) {
+   if(c->mem == NULL) printf("MEMORY NOT INITIALISED\n");
+   else {
+      u32 i;
+      printf("\n");
+      for(i = start_addr; i < end_addr; i++) {
+         if((i != start_addr) && ((i - start_addr) % 8) == 0) printf("\n");
+         printf("%3x", c->mem[i]);
+      }
+      printf("\n");
+   }
 }
 
 /* operations 
