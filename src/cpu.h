@@ -67,6 +67,8 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
       /* if offset id u8, cast it to u16 */
       u16 offset
    );
+   
+   void mov_mr_new(cpu* c, reg dst, u32 addr);
 
    /* memory <- register */
    void mov_mr(cpu* c, u32 addr, reg src);
