@@ -4,6 +4,34 @@
 #include "extras.h"
 #include "memory.h"
 
+void test_mov_r16i(cpu* c) {
+   mov_r16i(c, AX, 0x1622);
+   printf("mov_r16i test: ");
+   if(c->ax == 0x1622) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_r8i(cpu* c) {
+   mov_r16i(c, CH, 0x22);
+   printf("mov_r8i test: ");
+   if(((c->cx & 0xff00) >> 8) == 0x22) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_r16r(cpu* c){
+   mov_r16r(c, BX, AX);
+   printf("mov_r16r test: ");
+   if(c->bx == c->ax) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
+void test_mov_r8r(cpu* c){
+   mov_r8r(c, CL, CH);
+   printf("mov_r8r test: ");
+   if(((c->cx & 0xff) == (c->cx & 0xff00) >> 8)) printf("PASSED\n");
+   else printf("FAILED\n");
+}
+
 int main(int argc, char* argv[]) {
    u32 addr;
    u8 mem[MAX_MEMORY];
