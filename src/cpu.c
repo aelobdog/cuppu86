@@ -225,6 +225,68 @@ void mov_rm(cpu* c, reg dst, reg index, u16 offset) {
    }
 }
 
+void mov_rm_new(cpu* c, reg dst, u32 addr) {
+   switch(dst) {
+   /* ---------------------------------- */
+   case AL: 
+      mov_r8i(c, AL, cpu_read_u8_at(c, addr));
+      break;
+   case BL: 
+      mov_r8i(c, BL, cpu_read_u8_at(c, addr));
+      break;
+   case CL: 
+      mov_r8i(c, CL, cpu_read_u8_at(c, addr));
+      break;
+   case DL: 
+      mov_r8i(c, DL, cpu_read_u8_at(c, addr));
+      break;
+   /* ---------------------------------- */
+   case AH:
+      mov_r8i(c, AH, cpu_read_u8_at(c, addr));
+      break;
+   case BH:
+      mov_r8i(c, BH, cpu_read_u8_at(c, addr));
+      break;
+   case CH:
+      mov_r8i(c, CH, cpu_read_u8_at(c, addr));
+      break;
+   case DH:
+      mov_r8i(c, DH, cpu_read_u8_at(c, addr));
+      break;
+   /* ---------------------------------- */
+   case AX:
+      mov_r16i(c, AX, cpu_read_u16_at(c, addr));
+      break;
+   case BX:
+      mov_r16i(c, BX, cpu_read_u16_at(c, addr));
+      break;
+   case CX:
+      mov_r16i(c, CX,cpu_read_u16_at(c, addr));
+      break;
+   case DX:
+      mov_r16i(c, DX,cpu_read_u16_at(c, addr));
+      break;
+   /* ---------------------------------- */
+   case SI:
+      mov_r16i(c, SI,cpu_read_u16_at(c, addr));
+      break;
+   case DI:
+      mov_r16i(c, DI,cpu_read_u16_at(c, addr));
+      break;
+   case SP:
+      mov_r16i(c, SP,cpu_read_u16_at(c, addr));
+      break;
+   case BP:
+      mov_r16i(c, BP,cpu_read_u16_at(c, addr));
+      break;
+   case IP:
+      mov_r16i(c, IP,cpu_read_u16_at(c, addr));
+      break;
+   /* ---------------------------------- */
+   default : return;
+   }
+}
+
 void mov_mr(cpu* c, u32 addr, reg src) {
    u8 src_u8; /* required only for 8 bit registers */
 
