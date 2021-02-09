@@ -1,3 +1,5 @@
+<p align="center"><img src="./logo.svg" alt="Cuppu86"/></p>
+
 # Cuppu
 
 ## What is Cuppu ?
