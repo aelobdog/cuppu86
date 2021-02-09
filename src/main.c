@@ -60,11 +60,48 @@ void test_mov_mr_8(cpu* c){
    else printf("FAILED\n");
 }
 
+void test_mov_binary(cpu* c) {
+   u32 instr;
+
+   cpu_init(c);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip), 0xb0);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+1), 0xff);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+2), 0xb4);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+3), 0xaa);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+4), 0xb8);
+   cpu_write_u16_at(c, base_offset(c->cs, c->ip+5), 0x22da);
+
+   printf("binary code: \n");
+   cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+8));
+   printf("\n-------------------------------------\ntesting the fetch and execute");
+
+   /* fetch 1 */
+   printf("\n1\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+
+   /* fetch 2 */
+   printf("\n2\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+
+   /* fetch 3 */
+   printf("\n3\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+
+   printf("fetch/execute test done.\n------------------------------------------\n");
+}
+
 int main(int argc, char* argv[]) {
    u32 addr;
    u8 mem[MAX_MEMORY];
    cpu* c;
-   c = (cpu*) calloc(1, sizeof(cpu));
+   c = (cpu*) malloc(sizeof(cpu));
+   cpu_init(c);
    
    /* Initial Register Values */
    cpu_dump(c);
@@ -83,6 +120,7 @@ int main(int argc, char* argv[]) {
    test_mov_rm_8(c);
    test_mov_mr_16(c);
    test_mov_mr_8(c);
+   test_mov_binary(c);
 
    cpu_dump(c);
    cpu_dump_mem(c, 0x10100, 0x10110);

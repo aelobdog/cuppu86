@@ -39,7 +39,7 @@ void cpu_init_segments(cpu *c);
 void cpu_set_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem(cpu* c, u8* mem); 
 u32  cpu_fetch(cpu* c);
-void cpu_exec(cpu* c, u32 inst);
+void cpu_exec(cpu* c, u32 instr);
 void cpu_dump(cpu* c);
 void cpu_dump_mem(cpu* c, u32 start_addr, u32 end_addr);
 

@@ -5,4 +5,4 @@ small: ./src/main.c
 	gcc -O3 -o bin/cuppu_small -std=c89 ./src/*.c
 
 clean:
-	rm ./bin/cuppu
+	rm ./bin/*

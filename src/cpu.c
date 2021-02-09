@@ -6,6 +6,16 @@
 
 /* initialize cpu state */
 void cpu_init (cpu *c) {
+   c->ax = 0;
+   c->bx = 0;
+   c->cx = 0;
+   c->dx = 0;
+   c->sp = 0;
+   c->bp = 0;
+   c->si = 0;
+   c->di = 0;
+
+   cpu_init_segments(c);
 }
 
 /* set segments with custom values */
@@ -30,12 +40,38 @@ void cpu_setmem(cpu *c, u8 *mem) {
 }
 
 /* fetch instruction from ram */
+/* maybe we don't need this... for now it's helpful 
+ * for debug purposes, but maybe delete later */
 u32 cpu_fetch(cpu *c) {
-   return 0; /* temporary */
+   u32 instr;
+   instr = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+   (c->ip)++;
+   return instr; /* temporary */
 }
 
 /* execute instruction */
-void cpu_exec(cpu *c, u32 inst) {
+void cpu_exec(cpu *c, u32 instr) {
+   switch (instr) {
+      /* 8 bit immediate value */
+      case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb1: mov_r8i(c, CL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb2: mov_r8i(c, DL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb3: mov_r8i(c, BL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
+      case 0xb4: mov_r8i(c, AH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
+      case 0xb5: mov_r8i(c, CH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
+      case 0xb6: mov_r8i(c, DH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;  
+      case 0xb7: mov_r8i(c, BH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+
+      /* 16 bit immediate value */
+      case 0xb8: mov_r16i(c, AX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
+      case 0xb9: mov_r16i(c, CX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
+      case 0xba: mov_r16i(c, DX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
+      case 0xbb: mov_r16i(c, BX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
+      case 0xbc: mov_r16i(c, SP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
+      case 0xbd: mov_r16i(c, BP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
+      case 0xbe: mov_r16i(c, SI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
+      case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
+   }
 }
 
 /* dump all regs' values */
@@ -47,7 +83,12 @@ void cpu_dump(cpu *c) {
    printf("SP: %4x H\n", c->sp);
    printf("BP: %4x H\n", c->bp);
    printf("SI: %4x H\n", c->si);
-   printf("DI: %4x H\n\n", c->di);
+   printf("DI: %4x H\n", c->di);
+   printf("----------\n");
+   printf("CS: %4x H\n", c->cs);
+   printf("DS: %4x H\n", c->ds);
+   printf("ES: %4x H\n", c->es);
+   printf("SS: %4x H\n\n", c->ss);
 }
 
 void cpu_dump_mem(cpu* c, u32 start_addr, u32 end_addr) {
