@@ -74,6 +74,12 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
    /* memory <- register */
    void mov_mr(cpu* c, u32 addr, reg src);
 
+   /* increment instructions */
+   void inc_byte_ptr(cpu* c, reg src);
+   void inc_word_ptr(cpu* c, reg src);
+   void inc_dword_ptr(cpu* c, reg src);
+
+
 /* misc. helper functions */
    /* address with base and offset
     * returns a u32 but in reality it is a
