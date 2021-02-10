@@ -7,4 +7,9 @@ typedef enum registers {
    SI, DI, SP, BP, IP
 } reg;
 
+typedef enum flags {
+   CF, PF, AF, ZF, SF, OF,
+   TF, IF, DF
+} flag;
+
 #endif
