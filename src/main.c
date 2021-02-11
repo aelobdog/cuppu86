@@ -33,14 +33,14 @@ void test_mov_r8r(cpu* c) {
 }
 
 void test_mov_rm_16(cpu* c) {
-   mov_rm_new(c, SP, base_offset(0x2000, 0x100));
+   mov_rm(c, SP, base_offset(0x2000, 0x100));
    printf("mov_rm_16 test    : ");
    if(c->sp == 0x6141) printf("PASSED\n");
    else printf("FAILED\n");
 }
 
 void test_mov_rm_8(cpu* c) {
-   mov_rm_new(c, DH, base_offset(0x2000, 0x100));
+   mov_rm(c, DH, base_offset(0x2000, 0x100));
    printf("mov_rm_8 test     : ");
    if(((c->dx & 0xff00) >> 8) == 0x41) printf("PASSED\n");
    else printf("FAILED\n");
@@ -60,11 +60,58 @@ void test_mov_mr_8(cpu* c){
    else printf("FAILED\n");
 }
 
+void test_mov_binary(cpu* c) {
+   u32 instr;
+
+   cpu_init(c);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip), 0xb0);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+1), 0xff);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+2), 0xb4);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+3), 0xaa);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+4), 0xb9);
+   cpu_write_u16_at(c, base_offset(c->cs, c->ip+5), 0x22da);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+7), 0x88);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+8), 0x2f);
+
+   printf("binary code: \n");
+   cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+12));
+   printf("\n-------------------------------------\ntesting the fetch and execute");
+
+   /* fetch 1 */
+   printf("\n1\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   /*cpu_dump(c);*/
+
+   /* fetch 2 */
+   printf("\n2\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   /*cpu_dump(c);*/
+
+   /* fetch 3 */
+   printf("\n3\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   /*cpu_dump(c);*/
+
+   /* fetch 4 */
+   printf("\n4\n");
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+   printf("ds:bx\n");
+   cpu_dump_mem(c, base_offset(c->ds, c->bx), base_offset(c->ds, c->bx+4));
+
+   printf("fetch/execute test done.\n------------------------------------------\n");
+}
+
 int main(int argc, char* argv[]) {
    u32 addr;
    u8 mem[MAX_MEMORY];
    cpu* c;
-   c = (cpu*) calloc(1, sizeof(cpu));
+   c = (cpu*) malloc(sizeof(cpu));
+   cpu_init(c);
    
    /* Initial Register Values */
    cpu_dump(c);
@@ -83,8 +130,8 @@ int main(int argc, char* argv[]) {
    test_mov_rm_8(c);
    test_mov_mr_16(c);
    test_mov_mr_8(c);
+   test_mov_binary(c);
 
-   cpu_dump(c);
    cpu_dump_mem(c, 0x10100, 0x10110);
    return 0;
 }

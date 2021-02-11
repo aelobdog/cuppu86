@@ -11,7 +11,7 @@
 /* includes */
 #include <stdint.h>
 #include "types.h"
-#include "cpu_enums.h"
+#include "cpu_extra.h"
 
 /* cpu */
 typedef struct cpu {
@@ -38,8 +38,8 @@ void cpu_init(cpu* c);
 void cpu_init_segments(cpu *c);
 void cpu_set_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem(cpu* c, u8* mem); 
-u32  cpu_fetch(cpu* c);
-void cpu_exec(cpu* c, u32 inst);
+u8  cpu_fetch(cpu* c);
+void cpu_exec(cpu* c, u8 instr);
 void cpu_dump(cpu* c);
 void cpu_dump_mem(cpu* c, u32 start_addr, u32 end_addr);
 
@@ -61,15 +61,7 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
    void mov_r8r(cpu* c, reg dst, reg src);
 
    /* register <- memory */
-   void mov_rm(
-      cpu* c, 
-      reg dst, 
-      reg index,
-      /* if offset id u8, cast it to u16 */
-      u16 offset
-   );
-   
-   void mov_rm_new(cpu* c, reg dst, u32 addr);
+   void mov_rm(cpu* c, reg dst, u32 addr);
 
    /* memory <- register */
    void mov_mr(cpu* c, u32 addr, reg src);
