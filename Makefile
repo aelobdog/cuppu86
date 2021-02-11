@@ -6,3 +6,6 @@ small: ./src/main.c
 
 clean:
 	rm ./bin/*
+
+run:
+	./bin/cuppu

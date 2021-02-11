@@ -57,22 +57,22 @@ u8 segment_override = 0;
 /* u8 offsets will get coerced to u16 automatically */
 u32 get_mrm_loc(cpu* c, u8 mrm, u16 base_segment, u16 offset) {
    switch(mrm) {
-    case  0: base_offset(base_segment, c->bx + c->si); break;
-    case  1: base_offset(base_segment, c->bx + c->di); break;
-    case  2: base_offset(base_segment, c->bp + c->si); break;
-    case  3: base_offset(base_segment, c->bp + c->di); break;
-    case  4: base_offset(base_segment, c->si); break;
-    case  5: base_offset(base_segment, c->di); break;
-    case  6: base_offset(base_segment, offset); break;
-    case  7: base_offset(base_segment, c->bx); break;
-    case  8: case 16: base_offset(base_segment, c->bx + c->si + offset); break;
-    case  9: case 17: base_offset(base_segment, c->bx + c->di + offset); break;
-    case 10: case 18: base_offset(base_segment, c->bp + c->si + offset); break;
-    case 11: case 19: base_offset(base_segment, c->bp + c->di + offset); break;
-    case 12: case 20: base_offset(base_segment, c->si + offset); break;
-    case 13: case 21: base_offset(base_segment, c->di + offset); break;
-    case 14: case 22: base_offset(base_segment, c->bp + offset); break;
-    case 15: case 23: base_offset(base_segment, c->bx + offset); break;
+    case  0: return base_offset(base_segment, c->bx + c->si);
+    case  1: return base_offset(base_segment, c->bx + c->di);
+    case  2: return base_offset(base_segment, c->bp + c->si);
+    case  3: return base_offset(base_segment, c->bp + c->di);
+    case  4: return base_offset(base_segment, c->si); 
+    case  5: return base_offset(base_segment, c->di); 
+    case  6: return base_offset(base_segment, offset);
+    case  7: return base_offset(base_segment, c->bx); 
+    case  8: case 16: return base_offset(base_segment, c->bx + c->si + offset);
+    case  9: case 17: return base_offset(base_segment, c->bx + c->di + offset);
+    case 10: case 18: return base_offset(base_segment, c->bp + c->si + offset);
+    case 11: case 19: return base_offset(base_segment, c->bp + c->di + offset);
+    case 12: case 20: return base_offset(base_segment, c->si + offset);
+    case 13: case 21: return base_offset(base_segment, c->di + offset);
+    case 14: case 22: return base_offset(base_segment, c->bp + offset);
+    case 15: case 23: return base_offset(base_segment, c->bx + offset);
    }
    return 255; /* should never happen */
 }
@@ -86,7 +86,7 @@ u8 get_reg8(u8 regnum) {
    case 3: return BL;
    case 4: return AH;
    case 5: return CH;
-   case 6: return CH;
+   case 6: return DH;
    case 7: return BH;
    }
    return 255; /* should never happen */
@@ -433,6 +433,11 @@ u8 cpu_fetch(cpu *c) {
 
 /* execute instruction */
 void cpu_exec(cpu *c, u8 instr) {
+   /* variable declarations */
+      u8 dst_reg, mod, next, m_rm, rg;
+      u16 offset;
+   /* --------------------- */
+
    u32 addr;
    switch (instr) {
       /* 8 bit immediate value */
@@ -456,8 +461,6 @@ void cpu_exec(cpu *c, u8 instr) {
       case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
 
       case 0x88:
-         u8 dst_reg, mod, next, m_rm, rg;
-         u16 offset;
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
 
@@ -484,6 +487,7 @@ void cpu_exec(cpu *c, u8 instr) {
             } else {
                offset = 0;
             }
+
            
             /* perform move operation from register to memory */
             mov_mr(
@@ -498,6 +502,18 @@ void cpu_exec(cpu *c, u8 instr) {
                ), 
                rg
             );
+
+            /*
+            printf("mrm loc %x\n",
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ));
+               */
          }
       break; /* 0x88 */
       case 0x89: break;
