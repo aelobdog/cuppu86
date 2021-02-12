@@ -72,36 +72,42 @@ void test_mov_binary(cpu* c) {
    cpu_write_u16_at(c, base_offset(c->cs, c->ip+5), 0x22da);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+7), 0x88);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+8), 0x2f);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+9), 0x89);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+10), 0x06);
+   cpu_write_u16_at(c, base_offset(c->cs, c->ip+11), 0x5000);
 
    printf("binary code: \n");
    cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+12));
    printf("\n-------------------------------------\ntesting the fetch and execute");
 
    /* fetch 1 */
-   printf("\n1\n");
    instr = cpu_fetch(c);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 2 */
-   printf("\n2\n");
    instr = cpu_fetch(c);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 3 */
-   printf("\n3\n");
    instr = cpu_fetch(c);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 4 */
-   printf("\n4\n");
    instr = cpu_fetch(c);
    cpu_exec(c, instr);
    cpu_dump(c);
    printf("ds:bx\n");
    cpu_dump_mem(c, base_offset(c->ds, c->bx), base_offset(c->ds, c->bx+4));
+
+   /* fetch 5 */
+   instr = cpu_fetch(c);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+   printf("2000: \n");
+   cpu_dump_mem(c, base_offset(c->ds, 0x5000), base_offset(c->ds, 0x5000+4));
 
    printf("fetch/execute test done.\n------------------------------------------\n");
 }

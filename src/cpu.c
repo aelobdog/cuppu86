@@ -144,6 +144,7 @@ u16 get_base_from_mrm(cpu* c, u8 mrm) {
          return get_base_default(c, SI);
       case 5: case 13: case 21:
          return get_base_default(c, DI);
+      case 6: return c->ds;
    }
    return 255; /* should never happen */
 }
@@ -516,7 +517,64 @@ void cpu_exec(cpu *c, u8 instr) {
                */
          }
       break; /* 0x88 */
-      case 0x89: break;
+      case 0x89: 
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         /* get the specific register from its binary representation */
+         rg = get_reg16(rg);
+
+         printf("reg: %d\n", rg);
+
+         if (m_rm >= 24) {
+            dst_reg = get_reg16(R_M(next));
+            mov_r16r(c, dst_reg, rg);
+         } else {
+            mod = MOD(next);
+
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+
+           
+            /* perform move operation from register to memory */
+            mov_mr(
+               c, 
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               rg
+            );
+
+            /*
+            printf("mrm loc %x\n",
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ));
+               */
+         }
+      break; /* 0x89 */
       case 0x8a: break;
       case 0x8b: break;
    }
