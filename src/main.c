@@ -66,48 +66,84 @@ void test_mov_binary(cpu* c) {
    cpu_init(c);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip), 0xb0);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+1), 0xff);
+
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+2), 0xb4);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+3), 0xaa);
+   
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+4), 0xb9);
    cpu_write_u16_at(c, base_offset(c->cs, c->ip+5), 0x22da);
+
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+7), 0x88);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+8), 0x2f);
+
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+9), 0x89);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+10), 0x06);
    cpu_write_u16_at(c, base_offset(c->cs, c->ip+11), 0x5000);
 
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+13), 0x8b);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+14), 0xc3);
+   
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+15), 0x8a);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+16), 0xf1);
+  
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+17), 0x8b);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+18), 0x1e);
+   cpu_write_u16_at(c, base_offset(c->cs, c->ip+19), 0x0100);
+
    printf("binary code: \n");
-   cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+12));
+   cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+21));
    printf("\n-------------------------------------\ntesting the fetch and execute");
 
    /* fetch 1 */
    instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 2 */
    instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 3 */
    instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
    cpu_exec(c, instr);
    /*cpu_dump(c);*/
 
    /* fetch 4 */
    instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
    cpu_exec(c, instr);
    cpu_dump(c);
-   printf("ds:bx\n");
    cpu_dump_mem(c, base_offset(c->ds, c->bx), base_offset(c->ds, c->bx+4));
 
    /* fetch 5 */
    instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
    cpu_exec(c, instr);
    cpu_dump(c);
-   printf("2000: \n");
+   printf("2000: ");
    cpu_dump_mem(c, base_offset(c->ds, 0x5000), base_offset(c->ds, 0x5000+4));
+   
+   /* fetch 6 */
+   instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+   
+   /* fetch 7 */
+   instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
+   cpu_exec(c, instr);
+   cpu_dump(c);
+   
+   /* fetch 8 */
+   instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
+   cpu_exec(c, instr);
+   cpu_dump(c);
 
    printf("fetch/execute test done.\n------------------------------------------\n");
 }
@@ -120,7 +156,7 @@ int main(int argc, char* argv[]) {
    cpu_init(c);
    
    /* Initial Register Values */
-   cpu_dump(c);
+   /* cpu_dump(c); */
 
    addr = base_offset(0x2000, 0x100);
    mem[addr] = (u8)0x41;

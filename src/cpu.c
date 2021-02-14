@@ -358,7 +358,7 @@ u8 cpu_read_u8_at(cpu* c, u32 addr) {
    return data;
 }
 
-/* little endian */
+/* little endian read */
 u16 cpu_read_u16_at(cpu* c, u32 addr) {
    u16 data;
    data = c->mem[addr];
@@ -370,7 +370,7 @@ void cpu_write_u8_at(cpu* c, u32 addr, u8 data) {
    c->mem[addr] = data;
 }
 
-/* little endian */
+/* little endian write */
 void cpu_write_u16_at(cpu* c, u32 addr, u16 data) {
    c->mem[addr] = (u8)(data & 0xff);
    c->mem[addr + 1] = (u8)((data & 0xff00) >> 8);
@@ -414,33 +414,44 @@ void cpu_setmem(cpu *c, u8 *mem) {
    c->mem = mem;
 }
 
-/* fetch instruction from ram */
-/* RECURSION, BEWARE */
+/* fetch a byte from memory
+ *
+ * cpu_fetch() is responsible for retrieving
+ * a single byte of information from memory.
+ * It also processes the information present
+ * in this byte if it an override (like a
+ * segement override. It returns the byte 
+ * otherwise, which is just the opcode of
+ * the next instruction.
+ */
 u8 cpu_fetch(cpu *c) {
-   u8 instr;
-   instr = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
-   switch (instr) {
+   u8 byte;
+   byte = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+   switch (byte) {
       case 0x26: case 0x2e: case 0x36: case 0x3e: 
-         segment_override = instr;
+         segment_override = byte;
          (c->ip)++;
-         instr = cpu_fetch(c);
+         byte = cpu_fetch(c);
       break;
       default:
          (c->ip)++;
       break;
    }
-   return instr; /* temporary */
+   return byte; /* opcode */
 }
 
-/* execute instruction */
-void cpu_exec(cpu *c, u8 instr) {
-   /* variable declarations */
-      u8 dst_reg, mod, next, m_rm, rg;
-      u16 offset;
-   /* --------------------- */
-
+/* execute an instruction based on the opcode recieved
+ *
+ * cpu_exec() is in charge of reading as much
+ * memory as required by the opcode it is 
+ * given.
+ */
+void cpu_exec(cpu *c, u8 opcode) {
+   u8 other_reg, mod, next, m_rm, rg;
+   u16 offset;
    u32 addr;
-   switch (instr) {
+
+   switch (opcode) {
       /* 8 bit immediate value */
       case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb1: mov_r8i(c, CL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
@@ -460,7 +471,8 @@ void cpu_exec(cpu *c, u8 instr) {
       case 0xbd: mov_r16i(c, BP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
       case 0xbe: mov_r16i(c, SI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
       case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
-
+      
+      /* reg8/mem8 <- reg8 */
       case 0x88:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
@@ -473,8 +485,8 @@ void cpu_exec(cpu *c, u8 instr) {
          rg = get_reg8(rg);
 
          if (m_rm >= 24) {
-            dst_reg = get_reg8(R_M(next));
-            mov_r8r(c, dst_reg, rg);
+            other_reg = get_reg8(R_M(next));
+            mov_r8r(c, other_reg, rg);
          } else {
             mod = MOD(next);
 
@@ -488,7 +500,6 @@ void cpu_exec(cpu *c, u8 instr) {
             } else {
                offset = 0;
             }
-
            
             /* perform move operation from register to memory */
             mov_mr(
@@ -503,20 +514,10 @@ void cpu_exec(cpu *c, u8 instr) {
                ), 
                rg
             );
-
-            /*
-            printf("mrm loc %x\n",
-               get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
-                  :  get_base_from_mrm(c, m_rm),
-                  offset
-               ));
-               */
          }
       break; /* 0x88 */
+      
+      /* reg16/mem16 <- reg16 */
       case 0x89: 
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
@@ -528,11 +529,9 @@ void cpu_exec(cpu *c, u8 instr) {
          /* get the specific register from its binary representation */
          rg = get_reg16(rg);
 
-         printf("reg: %d\n", rg);
-
          if (m_rm >= 24) {
-            dst_reg = get_reg16(R_M(next));
-            mov_r16r(c, dst_reg, rg);
+            other_reg = get_reg16(R_M(next));
+            mov_r16r(c, other_reg, rg);
          } else {
             mod = MOD(next);
 
@@ -546,7 +545,6 @@ void cpu_exec(cpu *c, u8 instr) {
             } else {
                offset = 0;
             }
-
            
             /* perform move operation from register to memory */
             mov_mr(
@@ -561,9 +559,41 @@ void cpu_exec(cpu *c, u8 instr) {
                ), 
                rg
             );
+         }
+      break; /* 0x89 */
 
-            /*
-            printf("mrm loc %x\n",
+      case 0x8a:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         /* get the specific register from its binary representation */
+         /* in this case, this register is the destination of the move */
+         rg = get_reg8(rg);
+         
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            mov_r8r(c, rg, other_reg);
+         } else {
+            mod = MOD(next);
+
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+            
+            mov_rm(
+               c, 
+               rg,
                get_mrm_loc(
                   c, 
                   m_rm, 
@@ -571,36 +601,80 @@ void cpu_exec(cpu *c, u8 instr) {
                   ?  get_base_override(c, segment_override) 
                   :  get_base_from_mrm(c, m_rm),
                   offset
-               ));
-               */
+               )
+            );
          }
-      break; /* 0x89 */
-      case 0x8a: break;
-      case 0x8b: break;
+         break;
+
+      case 0x8b:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         /* get the specific register from its binary representation */
+         /* in this case, this register is the destination of the move */
+         rg = get_reg16(rg);
+         
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            mov_r16r(c, rg, other_reg);
+         } else {
+            mod = MOD(next);
+
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+            
+            mov_rm(
+               c, 
+               rg,
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               )
+            );
+         }
+         break;
    }
+
    /* setting the segment override to 0 after executing every instruction */
    segment_override = 0;
 }
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {
-   printf("\nAX: %4x H\n", c->ax);
-   printf("BX: %4x H\n", c->bx);
-   printf("CX: %4x H\n", c->cx);
-   printf("DX: %4x H\n", c->dx);
-   printf("SP: %4x H\n", c->sp);
-   printf("BP: %4x H\n", c->bp);
-   printf("SI: %4x H\n", c->si);
-   printf("DI: %4x H\n", c->di);
-   printf("----------\n");
-   printf("CS: %4x H\n", c->cs);
-   printf("DS: %4x H\n", c->ds);
-   printf("ES: %4x H\n", c->es);
-   printf("SS: %4x H\n\n", c->ss);
+   printf("\nAX: %4x H\n",   c->ax);
+   printf(  "BX: %4x H\n",   c->bx);
+   printf(  "CX: %4x H\n",   c->cx);
+   printf(  "DX: %4x H\n",   c->dx);
+   printf(  "SP: %4x H\n",   c->sp);
+   printf(  "BP: %4x H\n",   c->bp);
+   printf(  "SI: %4x H\n",   c->si);
+   printf(  "DI: %4x H\n",   c->di);
+   printf(  "----------\n"        );
+   printf(  "CS: %4x H\n",   c->cs);
+   printf(  "DS: %4x H\n",   c->ds);
+   printf(  "ES: %4x H\n",   c->es);
+   printf(  "SS: %4x H\n\n", c->ss);
 }
 
+/* dump the data stored at some location in cpu memory */
 void cpu_dump_mem(cpu* c, u32 start_addr, u32 end_addr) {
-   if(c->mem == NULL) printf("MEMORY NOT INITIALISED\n");
+   if(c->mem == NULL) printf("Memory not initialised.\n");
    else {
       u32 i;
       printf("\n");
