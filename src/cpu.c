@@ -106,6 +106,16 @@ u8 get_reg16(u8 regnum) {
    return 255; /* should never happen */
 }
 
+u8 get_sreg16(u8 regnum) {
+   switch(regnum) {
+   case 0: return ES;
+   case 1: return CS;
+   case 2: return SS;
+   case 3: return DS;
+   }
+   return 255; /* should never happen */
+}
+
 /* get base segment if override is set */
 u16 get_base_override(cpu* c, u8 override) {
    switch (override) {
@@ -163,6 +173,10 @@ void mov_r16i(cpu *c, reg r, u16 val) {
    case BP: c->bp = val; break;
    case SI: c->si = val; break;
    case DI: c->di = val; break;
+   case ES: c->es = val; break;
+   case CS: c->cs = val; break;
+   case SS: c->ss = val; break;
+   case DS: c->ds = val; break;
    default: break; /* should never come here */
    }
 }
@@ -188,6 +202,10 @@ void mov_r16r(cpu* c, reg dst, reg src) {
       case CX: src_val = c->cx; break;
       case DX: src_val = c->dx; break;
       case BX: src_val = c->bx; break;
+      case ES: src_val = c->es; break;
+      case CS: src_val = c->cs; break;
+      case SS: src_val = c->ss; break;
+      case DS: src_val = c->ds; break;
       default: break; /* should never come here */
    }
    mov_r16i(c, dst, src_val);
@@ -245,26 +263,39 @@ void mov_rm(cpu* c, reg dst, u32 addr) {
       mov_r16i(c, BX, cpu_read_u16_at(c, addr));
       break;
    case CX:
-      mov_r16i(c, CX,cpu_read_u16_at(c, addr));
+      mov_r16i(c, CX, cpu_read_u16_at(c, addr));
       break;
    case DX:
-      mov_r16i(c, DX,cpu_read_u16_at(c, addr));
+      mov_r16i(c, DX, cpu_read_u16_at(c, addr));
       break;
    /* ---------------------------------- */
    case SI:
-      mov_r16i(c, SI,cpu_read_u16_at(c, addr));
+      mov_r16i(c, SI, cpu_read_u16_at(c, addr));
       break;
    case DI:
-      mov_r16i(c, DI,cpu_read_u16_at(c, addr));
+      mov_r16i(c, DI, cpu_read_u16_at(c, addr));
       break;
    case SP:
-      mov_r16i(c, SP,cpu_read_u16_at(c, addr));
+      mov_r16i(c, SP, cpu_read_u16_at(c, addr));
       break;
    case BP:
-      mov_r16i(c, BP,cpu_read_u16_at(c, addr));
+      mov_r16i(c, BP, cpu_read_u16_at(c, addr));
       break;
    case IP:
-      mov_r16i(c, IP,cpu_read_u16_at(c, addr));
+      mov_r16i(c, IP, cpu_read_u16_at(c, addr));
+      break;
+   /* ---------------------------------- */
+   case ES:
+      mov_r16i(c, ES, cpu_read_u16_at(c, addr));
+      break;
+   case CS:
+      mov_r16i(c, CS, cpu_read_u16_at(c, addr));
+      break;
+   case SS:
+      mov_r16i(c, SS, cpu_read_u16_at(c, addr));
+      break;
+   case DS:
+      mov_r16i(c, DS, cpu_read_u16_at(c, addr));
       break;
    /* ---------------------------------- */
    default : return;
@@ -337,6 +368,19 @@ void mov_mr(cpu* c, u32 addr, reg src) {
       break;
    case IP:
       cpu_write_u16_at(c, addr, c->ip);
+      break;
+   /* ---------------------------------- */
+   case ES:
+      cpu_write_u16_at(c, addr, c->es);
+      break;
+   case CS:
+      cpu_write_u16_at(c, addr, c->cs);
+      break;
+   case SS:
+      cpu_write_u16_at(c, addr, c->ss);
+      break;
+   case DS:
+      cpu_write_u16_at(c, addr, c->ds);
       break;
    /* ---------------------------------- */
    default : return; /* should never come here */
@@ -617,6 +661,95 @@ void cpu_exec(cpu *c, u8 opcode) {
          /* get the specific register from its binary representation */
          /* in this case, this register is the destination of the move */
          rg = get_reg16(rg);
+         
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            mov_r16r(c, rg, other_reg);
+         } else {
+            mod = MOD(next);
+
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+            
+            mov_rm(
+               c, 
+               rg,
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               )
+            );
+         }
+         break;
+
+      case 0x8c:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         /* get the specific register from its binary representation */
+         rg = get_sreg16(rg);
+
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            printf("%d, %d", rg, other_reg);
+            mov_r16r(c, other_reg, rg);
+         } else {
+            mod = MOD(next);
+
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+           
+            /* perform move operation from register to memory */
+            mov_mr(
+               c, 
+               get_mrm_loc(
+                  c, 
+                  m_rm, 
+                  (segment_override != 0) 
+                  ?  get_base_override(c, segment_override) 
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               rg
+            );
+         }
+         break;
+      
+      case 0x8e:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         /* get the specific register from its binary representation */
+         /* in this case, this register is the destination of the move */
+         rg = get_sreg16(rg);
          
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
