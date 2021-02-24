@@ -1,0 +1,12 @@
+* Updates
+This is an informal file, meant to keep me on track as we develop this tool.
+
+*** Features being worked on currently
+
+*** Features that will be worked on next
+- [ ] implement /flag/ setting and reading functions
+- [ ] implement /add/ and /subtract/ functionality
+  - [ ] implement the basic functions for reg-mem, mem-reg, reg-reg, etc
+  - [ ] add calls to these functions depending on their opcodes
+- [ ] implement /increment/, /decrement/ opcodes (based on add, subtract)
+- [ ] implement /jump/ instructions
