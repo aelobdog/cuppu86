@@ -96,6 +96,12 @@ void test_mov_binary(cpu* c) {
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+23), 0x8c);
    cpu_write_u8_at(c, base_offset(c->cs, c->ip+24), 0xd0);
 
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+25), 0xff);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+26), 0xf0);
+
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+27), 0xff);
+   cpu_write_u8_at(c, base_offset(c->cs, c->ip+28), 0x37);
+
    printf("binary code: \n");
    cpu_dump_mem(c, base_offset(c->cs, c->ip), base_offset(c->cs, c->ip+32));
    printf("\n-------------------------------------\ntesting the fetch and execute");
@@ -162,6 +168,25 @@ void test_mov_binary(cpu* c) {
    printf("[%x]\n", instr);
    cpu_exec(c, instr);
    cpu_dump(c);
+   
+   c->ax = 0x1234;
+   c->bx = 0x200;
+   c->sp = 0x500;
+   cpu_write_u16_at(c, base_offset(c->ds, c->bx), 0xabcd);
+   printf("push reg: ax [%x]\n", c->ax);
+
+   /* fetch 11 */
+   instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
+   cpu_exec(c, instr);
+   cpu_dump_mem(c, base_offset(c->ss, c->sp), base_offset(c->ss, c->sp + 2));
+   printf("push mem at: bx [%x] val [%x]\n", c->bx, cpu_read_u16_at(c, base_offset(c->ds, c->bx)));
+  
+   /* fetch 12 */
+   instr = cpu_fetch(c);
+   printf("[%x]\n", instr);
+   cpu_exec(c, instr);
+   cpu_dump_mem(c, base_offset(c->ss, c->sp), base_offset(c->ss, c->sp+4));
 
    printf("fetch/execute test done.\n------------------------------------------\n");
 }

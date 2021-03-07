@@ -5,7 +5,7 @@ typedef enum registers {
    AL, AH, AX, BL, BH, BX,
    CL, CH, CX, DL, DH, DX,
    SI, DI, SP, BP, IP,
-   ES, CS, DS, SS
+   ES, CS, DS, SS, FLG
 } reg;
 
 typedef enum flags {

@@ -51,24 +51,15 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
 /* operations 
 ========================================== */
 /* move */ 
-
-   /* register <- immediate */
    void mov_r16i(cpu* c, reg dst, u16 val);
    void mov_r8i(cpu* c, reg dst, u8 val);
-
-   /* register <- register */
    void mov_r16r(cpu* c, reg dst, reg src);
    void mov_r8r(cpu* c, reg dst, reg src);
-
-   /* register <- memory */
    void mov_rm(cpu* c, reg dst, u32 addr);
-
-   /* memory <- register */
    void mov_mr(cpu* c, u32 addr, reg src);
 
-   /* increment instructions */
-   void inc_byte_ptr(cpu* c, reg src);
-   void inc_word_ptr(cpu* c, reg src);
+/* increment instructions */
+/* arithmetic instructions */
 
 /* misc. helper functions */
    /* address with base and offset
@@ -76,5 +67,6 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
     * 20 bit address to be able to access
     * a max of 1Mb space.                  */
    u32 base_offset(u16 base, u16 offset);
+   u16 switch_bytes(u16 val);
 
 #endif

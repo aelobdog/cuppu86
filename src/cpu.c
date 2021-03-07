@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "cpu.h"
+#include "types.h"
 
 /* helper funtion to fetch the location
  * indicated by mod+r/m fields of the instruction */
@@ -158,7 +159,6 @@ u16 get_base_from_mrm(cpu* c, u8 mrm) {
    }
    return 255; /* should never happen */
 }
-
 
 /* operations 
 ============================================== */
@@ -396,6 +396,10 @@ u32 base_offset(u16 base, u16 offset) {
    return final_addr;
 }
 
+u16 switch_bytes(u16 val) {
+   return ((val << 8) + ((val >> 8) & 0xff));
+}
+
 u8 cpu_read_u8_at(cpu* c, u32 addr) {
    u8 data;
    data = c->mem[addr];
@@ -492,8 +496,8 @@ u8 cpu_fetch(cpu *c) {
  */
 void cpu_exec(cpu *c, u8 opcode) {
    u8 other_reg, mod, next, m_rm, rg;
-   u16 offset;
-   u32 addr;
+   u16 offset, src_val;
+   u32 addr, src_addr;
 
    switch (opcode) {
       /* 8 bit immediate value */
@@ -781,6 +785,65 @@ void cpu_exec(cpu *c, u8 opcode) {
                )
             );
          }
+         break;
+
+      case 0xff:
+
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         switch (rg) {
+            case 0: /* increment m 16 instruction */
+               break;
+            case 1: /* decrement m 16 instruction */
+               break;
+            case 2: /* intrasegment call r/m 16 instruction */
+               break;
+            case 3: /* intersegment call m 16 instruction */
+               break;
+            case 4: /* intrasegment jump r/m 16 instruction */
+               break;
+            case 5: /* intersegment jump m instruction */
+               break;
+            case 6: /* push instruction */
+               if (m_rm >= 24) {
+                  other_reg = get_reg16(R_M(next));
+                  c->sp -= 2;
+                  mov_mr(c, base_offset(c->ss, c->sp), other_reg);
+               } else {
+                  mod = MOD(next);
+                  /* read the offset from memory if required */
+                  if (m_rm == 6 || mod == 2) {
+                     offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 2;
+                  } else if (mod == 1) {
+                     offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 1;
+                  } else {
+                     offset = 0;
+                  }
+
+                  src_addr = get_mrm_loc(
+                     c, 
+                     m_rm, 
+                     (segment_override != 0) 
+                     ?  get_base_override(c, segment_override) 
+                     :  get_base_from_mrm(c, m_rm),
+                     offset
+                  );
+
+                  src_val = cpu_read_u16_at(c, src_addr);
+                  c->sp -= 2;
+                  cpu_write_u16_at(c, base_offset(c->ss, c->sp), src_val);
+               }
+               break;
+            case 7: break; /* unused instruction */
+         }
+
          break;
    }
 
