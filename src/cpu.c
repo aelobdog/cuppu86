@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "cpu.h"
 #include "types.h"
+#include "flagops.h"
 
 /* helper funtion to fetch the location
  * indicated by mod+r/m fields of the instruction */
@@ -385,6 +386,70 @@ void mov_mr(cpu* c, u32 addr, reg src) {
    /* ---------------------------------- */
    default : return; /* should never come here */
    }
+}
+
+/* HANDLE ALL THE FLAG MODIFICATIONS !! */
+void inc_dec_r (cpu* c, reg r, u8 id) {
+   u16 change1, change2, old_val, new_val;
+   u8 bits;
+   
+   change1 = (id == 0) ? -0x0001 : 0x0001;
+   change2 = (id == 0) ? -0x0100 : 0x0100;
+   bits = 16;
+
+   switch (r) {
+      case 0:  old_val = c->ax; c->ax = (c->ax & 0xff00) + (u8)(((c->ax & 0x00ff) + change1) & 0x00ff); new_val = c->ax; bits = 8; break;
+      case 1:  old_val = c->ax; c->ax += change2; new_val = c->ax; break;
+      case 2:  old_val = c->ax; c->ax += change1; new_val = c->ax; break;
+              
+      case 3:  old_val = c->bx; c->bx = (c->bx & 0xff00) + (u8)(((c->bx & 0x00ff) + change1) & 0x00ff); new_val = c->bx; bits = 8; break;
+      case 4:  old_val = c->bx; c->bx += change2; new_val = c->bx; break;
+      case 5:  old_val = c->bx; c->bx += change1; new_val = c->bx; break;
+               
+      case 6:  old_val = c->cx; c->cx = (c->cx & 0xff00) + (u8)(((c->cx & 0x00ff) + change1) & 0x00ff); new_val = c->cx; bits = 8; break;
+      case 7:  old_val = c->cx; c->cx += change2; new_val = c->cx; break;
+      case 8:  old_val = c->cx; c->cx += change1; new_val = c->cx; break;
+
+      case 9:  old_val = c->dx; c->dx = (c->dx & 0xff00) + (u8)(((c->dx & 0x00ff) + change1) & 0x00ff); new_val = c->dx; bits = 8; break;
+      case 10: old_val = c->dx; c->dx += change2; new_val = c->dx; break;
+      case 11: old_val = c->dx; c->dx += change1; new_val = c->dx; break;
+
+      case 12: old_val = c->si; c->si += change1; new_val = c->si; break;
+      case 13: old_val = c->di; c->di += change1; new_val = c->di; break;
+      case 14: old_val = c->sp; c->sp += change1; new_val = c->sp; break;
+      case 15: old_val = c->bp; c->bp += change1; new_val = c->bp; break;
+      default: break; /* should never come here */
+   }
+
+   /* set all the flags required flags */
+   if (new_val == 0) setZF(c); else resetZF(c);
+   if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
+   if (has_even_parity(new_val)) setPF(c); else resetPF(c);
+}
+
+/* HANDLE ALL THE FLAG MODIFICATIONS !! */
+void inc_dec_m(cpu* c, u32 addr, u8 bw, u8 id) {
+   u8 mem8, mem16, bits;
+   u16 old_val, new_val;
+
+   bits = 16;
+   if (bw == 0) {
+      mem8 = cpu_read_u8_at(c, addr);
+      old_val = (u16)mem8;
+      cpu_write_u8_at(c, addr, mem8 + 0x01);
+      new_val = (u16)mem8;
+      bits = 8;
+   } else {
+      mem16 = cpu_read_u16_at(c, addr);
+      old_val = mem16;
+      cpu_write_u16_at(c, addr, mem16 + 0x0001);
+      new_val = mem16;
+   }
+
+   /* set all the flags required flags */
+   if (new_val == 0) setZF(c); else resetZF(c);
+   if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
+   if (has_even_parity(new_val)) setPF(c); else resetPF(c);
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -787,8 +852,45 @@ void cpu_exec(cpu *c, u8 opcode) {
          }
          break;
 
-      case 0xff:
+      case 0xfe:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
 
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
+
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            if (rg == 0) inc_r(c, other_reg);
+            else if (rg == 1) dec_r(c, other_reg);
+         } else {
+            mod = MOD(next);
+            /* read the offset from memory if required */
+            if (m_rm == 6 || mod == 2) {
+               offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 2;
+            } else if (mod == 1) {
+               offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+               (c->ip) += 1;
+            } else {
+               offset = 0;
+            }
+            src_addr = get_mrm_loc(
+               c, 
+               m_rm, 
+               (segment_override != 0) 
+               ?  get_base_override(c, segment_override) 
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            if (rg == 0) inc_m(c, src_addr, 0);
+            else if (rg == 1) dec_m(c, src_addr, 0);
+         }
+
+         break;
+
+      case 0xff:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
 
@@ -798,7 +900,33 @@ void cpu_exec(cpu *c, u8 opcode) {
 
          switch (rg) {
             case 0: /* increment m 16 instruction */
+               if (m_rm >= 24) {
+                  other_reg = get_reg16(R_M(next));
+                  inc_r(c, other_reg);
+               } else {
+                  mod = MOD(next);
+                  /* read the offset from memory if required */
+                  if (m_rm == 6 || mod == 2) {
+                     offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 2;
+                  } else if (mod == 1) {
+                     offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 1;
+                  } else {
+                     offset = 0;
+                  }
+
+                  src_addr = get_mrm_loc(
+                     c, 
+                     m_rm, 
+                     (segment_override != 0) 
+                     ?  get_base_override(c, segment_override) 
+                     :  get_base_from_mrm(c, m_rm),
+                     offset
+                  );
+                  inc_m(c, src_addr, 1);
                break;
+
             case 1: /* decrement m 16 instruction */
                break;
             case 2: /* intrasegment call r/m 16 instruction */

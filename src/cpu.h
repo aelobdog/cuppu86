@@ -58,7 +58,9 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
    void mov_rm(cpu* c, reg dst, u32 addr);
    void mov_mr(cpu* c, u32 addr, reg src);
 
-/* increment instructions */
+/* increment/decrement instructions */
+   void inc_dec_r(cpu* c, reg r, u8 id);
+   void inc_dec_m(cpu* c, u32 addr, u8 bw, u8 id);
 /* arithmetic instructions */
 
 /* misc. helper functions */
