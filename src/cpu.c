@@ -389,12 +389,12 @@ void mov_mr(cpu* c, u32 addr, reg src) {
 }
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
-void inc_dec_r (cpu* c, reg r, u8 id) {
+void inc_dec_r (cpu* c, reg r, i8 id) {
    u16 change1, change2, old_val, new_val;
    u8 bits;
    
-   change1 = (id == 0) ? -0x0001 : 0x0001;
-   change2 = (id == 0) ? -0x0100 : 0x0100;
+   change1 = (id == -1) ? -0x0001 : 0x0001;
+   change2 = (id == -1) ? -0x0100 : 0x0100;
    bits = 16;
 
    switch (r) {
@@ -428,27 +428,26 @@ void inc_dec_r (cpu* c, reg r, u8 id) {
 }
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
-void inc_dec_m(cpu* c, u32 addr, u8 bw, u8 id) {
-   u8 mem8, mem16, bits;
-   u16 old_val, new_val;
-
-   bits = 16;
-   if (bw == 0) {
+void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
+   u8 mem8, mem16, change2;
+   u16 old_val, new_val, change1;
+   change1 = (id == -1) ? -0x0001 : 0x0001;
+   change2 = (id == -1) ? -0x01 : 0x01;
+   if (bw == 8) {
       mem8 = cpu_read_u8_at(c, addr);
       old_val = (u16)mem8;
-      cpu_write_u8_at(c, addr, mem8 + 0x01);
+      cpu_write_u8_at(c, addr, mem8 + change2);
       new_val = (u16)mem8;
-      bits = 8;
    } else {
       mem16 = cpu_read_u16_at(c, addr);
       old_val = mem16;
-      cpu_write_u16_at(c, addr, mem16 + 0x0001);
+      cpu_write_u16_at(c, addr, mem16 + change1);
       new_val = mem16;
    }
 
    /* set all the flags required flags */
    if (new_val == 0) setZF(c); else resetZF(c);
-   if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
+   if (is_neg(new_val, bw)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
 }
 
@@ -862,8 +861,8 @@ void cpu_exec(cpu *c, u8 opcode) {
 
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
-            if (rg == 0) inc_r(c, other_reg);
-            else if (rg == 1) dec_r(c, other_reg);
+            if (rg == 0) inc_dec_r(c, other_reg, 1);
+            else if (rg == 1) inc_dec_r(c, other_reg, 0);
          } else {
             mod = MOD(next);
             /* read the offset from memory if required */
@@ -884,8 +883,8 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            if (rg == 0) inc_m(c, src_addr, 0);
-            else if (rg == 1) dec_m(c, src_addr, 0);
+            if (rg == 0) inc_dec_m(c, src_addr, 8, 1);
+            else if (rg == 1) inc_dec_m(c, src_addr, 8, -1);
          }
 
          break;
@@ -902,7 +901,7 @@ void cpu_exec(cpu *c, u8 opcode) {
             case 0: /* increment m 16 instruction */
                if (m_rm >= 24) {
                   other_reg = get_reg16(R_M(next));
-                  inc_r(c, other_reg);
+                  inc_dec_r(c, other_reg, 1);
                } else {
                   mod = MOD(next);
                   /* read the offset from memory if required */
@@ -924,7 +923,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                      :  get_base_from_mrm(c, m_rm),
                      offset
                   );
-                  inc_m(c, src_addr, 1);
+                  inc_dec_m(c, src_addr, 16, 1);
                break;
 
             case 1: /* decrement m 16 instruction */
@@ -973,6 +972,7 @@ void cpu_exec(cpu *c, u8 opcode) {
          }
 
          break;
+      }
    }
 
    /* setting the segment override to 0 after executing every instruction */
