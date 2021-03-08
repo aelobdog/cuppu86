@@ -44,7 +44,7 @@
 /* global variable to indicate if segment_override is applied or not */
 u8 segment_override = 0;
 
-/* registers and default segments that they offset 
+/* registers and default segments that they offset
  * +----------+----------+
  * | REGISTER |  OFFSETS |
  * +----------+----------+
@@ -63,10 +63,10 @@ u32 get_mrm_loc(cpu* c, u8 mrm, u16 base_segment, u16 offset) {
     case  1: return base_offset(base_segment, c->bx + c->di);
     case  2: return base_offset(base_segment, c->bp + c->si);
     case  3: return base_offset(base_segment, c->bp + c->di);
-    case  4: return base_offset(base_segment, c->si); 
-    case  5: return base_offset(base_segment, c->di); 
+    case  4: return base_offset(base_segment, c->si);
+    case  5: return base_offset(base_segment, c->di);
     case  6: return base_offset(base_segment, offset);
-    case  7: return base_offset(base_segment, c->bx); 
+    case  7: return base_offset(base_segment, c->bx);
     case  8: case 16: return base_offset(base_segment, c->bx + c->si + offset);
     case  9: case 17: return base_offset(base_segment, c->bx + c->di + offset);
     case 10: case 18: return base_offset(base_segment, c->bp + c->si + offset);
@@ -144,12 +144,12 @@ u16 get_base_default(cpu* c, reg regs) {
 
 u16 get_base_from_mrm(cpu* c, u8 mrm) {
    switch (mrm) {
-      case 0: case  8: case 16: 
+      case 0: case  8: case 16:
       case 1: case  9: case 17:
       case 7: case 15: case 23:
          return get_base_default(c, BX);
-      case 2:  case 10: case 18: 
-      case 3:  case 11: case 19: 
+      case 2:  case 10: case 18:
+      case 3:  case 11: case 19:
       case 14: case 22:
          return get_base_default(c, BP);
       case 4: case 12: case 20:
@@ -161,7 +161,7 @@ u16 get_base_from_mrm(cpu* c, u8 mrm) {
    return 255; /* should never happen */
 }
 
-/* operations 
+/* operations
 ============================================== */
 
 void mov_r16i(cpu *c, reg r, u16 val) {
@@ -231,16 +231,16 @@ void mov_r8r(cpu* c, reg dst, reg src) {
 void mov_rm(cpu* c, reg dst, u32 addr) {
    switch(dst) {
    /* ---------------------------------- */
-   case AL: 
+   case AL:
       mov_r8i(c, AL, cpu_read_u8_at(c, addr));
       break;
-   case BL: 
+   case BL:
       mov_r8i(c, BL, cpu_read_u8_at(c, addr));
       break;
-   case CL: 
+   case CL:
       mov_r8i(c, CL, cpu_read_u8_at(c, addr));
       break;
-   case DL: 
+   case DL:
       mov_r8i(c, DL, cpu_read_u8_at(c, addr));
       break;
    /* ---------------------------------- */
@@ -308,19 +308,19 @@ void mov_mr(cpu* c, u32 addr, reg src) {
 
    switch(src) {
    /* ---------------------------------- */
-   case AL: 
+   case AL:
       src_u8 = (u8)(c->ax & 0xff);
       cpu_write_u8_at(c, addr, src_u8);
       break;
-   case BL: 
+   case BL:
       src_u8 = (u8)(c->bx & 0xff);
       cpu_write_u8_at(c, addr, src_u8);
       break;
-   case CL: 
+   case CL:
       src_u8 = (u8)(c->cx & 0xff);
       cpu_write_u8_at(c, addr, src_u8);
       break;
-   case DL: 
+   case DL:
       src_u8 = (u8)(c->dx & 0xff);
       cpu_write_u8_at(c, addr, src_u8);
       break;
@@ -390,65 +390,146 @@ void mov_mr(cpu* c, u32 addr, reg src) {
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
 void inc_dec_r (cpu* c, reg r, i8 id) {
-   u16 change1, change2, old_val, new_val;
+   u16 change1, change2;
+   u32 old_val, new_val;
    u8 bits;
-   
+
+   printf("hello there");
+
    change1 = (id == -1) ? -0x0001 : 0x0001;
    change2 = (id == -1) ? -0x0100 : 0x0100;
    bits = 16;
 
    switch (r) {
-      case 0:  old_val = c->ax; c->ax = (c->ax & 0xff00) + (u8)(((c->ax & 0x00ff) + change1) & 0x00ff); new_val = c->ax; bits = 8; break;
-      case 1:  old_val = c->ax; c->ax += change2; new_val = c->ax; break;
-      case 2:  old_val = c->ax; c->ax += change1; new_val = c->ax; break;
-              
-      case 3:  old_val = c->bx; c->bx = (c->bx & 0xff00) + (u8)(((c->bx & 0x00ff) + change1) & 0x00ff); new_val = c->bx; bits = 8; break;
-      case 4:  old_val = c->bx; c->bx += change2; new_val = c->bx; break;
-      case 5:  old_val = c->bx; c->bx += change1; new_val = c->bx; break;
-               
-      case 6:  old_val = c->cx; c->cx = (c->cx & 0xff00) + (u8)(((c->cx & 0x00ff) + change1) & 0x00ff); new_val = c->cx; bits = 8; break;
-      case 7:  old_val = c->cx; c->cx += change2; new_val = c->cx; break;
-      case 8:  old_val = c->cx; c->cx += change1; new_val = c->cx; break;
+      case 0:
+         old_val = (u32)c->ax;
+         new_val = (u32)c->ax + (u32)change1;
+         c->ax = (c->ax & 0xff00) + (u8)(((c->ax & 0x00ff) + change1) & 0x00ff);
+         bits = 8;
+         break;
+      case 1:
+         old_val = c->ax;
+         new_val = (u32)c->ax + (u32)change2;
+         c->ax += change2;
+         break;
+      case 2:
+         old_val = c->ax;
+         new_val = (u32)c->ax + (u32)change1;
+         c->ax += change1;
+         break;
 
-      case 9:  old_val = c->dx; c->dx = (c->dx & 0xff00) + (u8)(((c->dx & 0x00ff) + change1) & 0x00ff); new_val = c->dx; bits = 8; break;
-      case 10: old_val = c->dx; c->dx += change2; new_val = c->dx; break;
-      case 11: old_val = c->dx; c->dx += change1; new_val = c->dx; break;
+      case 3:
+         old_val = c->bx;
+         new_val = (u32)c->bx + (u32)change1;
+         c->bx = (c->bx & 0xff00) + (u8)(((c->bx & 0x00ff) + change1) & 0x00ff);
+         bits = 8;
+         break;
+      case 4:
+         old_val = c->bx;
+         new_val = (u32)c->bx + (u32)change2;
+         c->bx += change2;
+         break;
+      case 5:
+         old_val = c->bx;
+         new_val = (u32)c->bx + (u32)change1;
+         c->bx += change1;
+         break;
 
-      case 12: old_val = c->si; c->si += change1; new_val = c->si; break;
-      case 13: old_val = c->di; c->di += change1; new_val = c->di; break;
-      case 14: old_val = c->sp; c->sp += change1; new_val = c->sp; break;
-      case 15: old_val = c->bp; c->bp += change1; new_val = c->bp; break;
+      case 6:
+         old_val = c->cx;
+         new_val = (u32)c->cx + (u32)change1;
+         c->cx = (c->cx & 0xff00) + (u8)(((c->cx & 0x00ff) + change1) & 0x00ff);
+         bits = 8;
+         break;
+      case 7:
+         old_val = c->cx;
+         new_val = (u32)c->cx + (u32)change2;
+         c->cx += change2;
+         break;
+      case 8:
+         old_val = c->cx;
+         new_val = (u32)c->cx + (u32)change1;
+         c->cx += change1;
+         break;
+
+      case 9:
+         old_val = c->dx;
+         new_val = (u32)c->dx + (u32)change1;
+         c->dx = (c->dx & 0xff00) + (u8)(((c->dx & 0x00ff) + change1) & 0x00ff);
+         bits = 8;
+         break;
+      case 10:
+         old_val = c->dx;
+         new_val = (u32)c->dx + (u32)change2;
+         c->dx += change2;
+         break;
+      case 11:
+         old_val = c->dx;
+         new_val = (u32)c->dx + (u32)change1;
+         c->dx += change1;
+         break;
+
+      case 12:
+         old_val = c->si;
+         new_val = (u32)c->si + (u32)change1;
+         c->si += change1;
+         break;
+      case 13:
+         old_val = c->di;
+         new_val = (u32)c->di + (u32)change1;
+         c->di += change1;
+         break;
+      case 14:
+         old_val = c->sp;
+         new_val = (u32)c->sp + (u32)change1;
+         c->sp += change1;
+         break;
+      case 15:
+         old_val = c->bp;
+         new_val = (u32)c->bp + (u32)change1;
+         c->bp += change1;
+         break;
       default: break; /* should never come here */
    }
 
    /* set all the flags required flags */
-   if (new_val == 0) setZF(c); else resetZF(c);
+   if ((bits == 8 && (u8)new_val == 0) || (bits == 16 && (u16)new_val == 0)) setZF(c); else resetZF(c);
    if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
+   if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
+
+   printf("{ %d }\n", new_val-old_val);
 }
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
 void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
-   u8 mem8, mem16, change2;
-   u16 old_val, new_val, change1;
+   u8 mem8, change2;
+   u16 mem16, change1;
+   u32 old_val, new_val;
    change1 = (id == -1) ? -0x0001 : 0x0001;
    change2 = (id == -1) ? -0x01 : 0x01;
    if (bw == 8) {
       mem8 = cpu_read_u8_at(c, addr);
-      old_val = (u16)mem8;
+      old_val = (u32)mem8;
+      new_val = (u32)mem8 + (u32)change2;
       cpu_write_u8_at(c, addr, mem8 + change2);
-      new_val = (u16)mem8;
    } else {
       mem16 = cpu_read_u16_at(c, addr);
+      printf("%x\n", mem16);
       old_val = mem16;
+      printf("%x\n", old_val);
+      new_val = (u32)mem16 + (u32)change1;
+      printf("%x\n", new_val);
       cpu_write_u16_at(c, addr, mem16 + change1);
-      new_val = mem16;
    }
 
    /* set all the flags required flags */
-   if (new_val == 0) setZF(c); else resetZF(c);
+   if ((bw == 8 && (u8)new_val == 0) || (bw == 16 && (u16)new_val == 0)) setZF(c); else resetZF(c);
    if (is_neg(new_val, bw)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
+   if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
+
+   printf("%x, %x, %x, %x \n", new_val, old_val, (u16)new_val, (u16)(old_val+1));
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -488,7 +569,7 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data) {
    c->mem[addr + 1] = (u8)((data & 0xff00) >> 8);
 }
 
-/* cpu procs 
+/* cpu procs
 ============================================== */
 
 /* initialize cpu state */
@@ -532,7 +613,7 @@ void cpu_setmem(cpu *c, u8 *mem) {
  * a single byte of information from memory.
  * It also processes the information present
  * in this byte if it an override (like a
- * segement override. It returns the byte 
+ * segement override. It returns the byte
  * otherwise, which is just the opcode of
  * the next instruction.
  */
@@ -540,7 +621,7 @@ u8 cpu_fetch(cpu *c) {
    u8 byte;
    byte = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
    switch (byte) {
-      case 0x26: case 0x2e: case 0x36: case 0x3e: 
+      case 0x26: case 0x2e: case 0x36: case 0x3e:
          segment_override = byte;
          (c->ip)++;
          byte = cpu_fetch(c);
@@ -555,7 +636,7 @@ u8 cpu_fetch(cpu *c) {
 /* execute an instruction based on the opcode recieved
  *
  * cpu_exec() is in charge of reading as much
- * memory as required by the opcode it is 
+ * memory as required by the opcode it is
  * given.
  */
 void cpu_exec(cpu *c, u8 opcode) {
@@ -568,22 +649,22 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb1: mov_r8i(c, CL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb2: mov_r8i(c, DL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
-      case 0xb3: mov_r8i(c, BL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
-      case 0xb4: mov_r8i(c, AH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
-      case 0xb5: mov_r8i(c, CH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break; 
-      case 0xb6: mov_r8i(c, DH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;  
+      case 0xb3: mov_r8i(c, BL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb4: mov_r8i(c, AH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb5: mov_r8i(c, CH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xb6: mov_r8i(c, DH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb7: mov_r8i(c, BH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
 
       /* 16 bit immediate value */
-      case 0xb8: mov_r16i(c, AX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
-      case 0xb9: mov_r16i(c, CX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
-      case 0xba: mov_r16i(c, DX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
-      case 0xbb: mov_r16i(c, BX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;  
-      case 0xbc: mov_r16i(c, SP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
-      case 0xbd: mov_r16i(c, BP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
-      case 0xbe: mov_r16i(c, SI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
-      case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;   
-      
+      case 0xb8: mov_r16i(c, AX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xb9: mov_r16i(c, CX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xba: mov_r16i(c, DX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xbb: mov_r16i(c, BX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xbc: mov_r16i(c, SP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xbd: mov_r16i(c, BP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xbe: mov_r16i(c, SI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+
       /* reg8/mem8 <- reg8 */
       case 0x88:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
@@ -612,25 +693,25 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-           
+
             /* perform move operation from register to memory */
             mov_mr(
-               c, 
+               c,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
-               ), 
+               ),
                rg
             );
          }
       break; /* 0x88 */
-      
+
       /* reg16/mem16 <- reg16 */
-      case 0x89: 
+      case 0x89:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
 
@@ -657,18 +738,18 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-           
+
             /* perform move operation from register to memory */
             mov_mr(
-               c, 
+               c,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
-               ), 
+               ),
                rg
             );
          }
@@ -685,7 +766,7 @@ void cpu_exec(cpu *c, u8 opcode) {
          /* get the specific register from its binary representation */
          /* in this case, this register is the destination of the move */
          rg = get_reg8(rg);
-         
+
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
             mov_r8r(c, rg, other_reg);
@@ -702,15 +783,15 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-            
+
             mov_rm(
-               c, 
+               c,
                rg,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
                )
@@ -729,7 +810,7 @@ void cpu_exec(cpu *c, u8 opcode) {
          /* get the specific register from its binary representation */
          /* in this case, this register is the destination of the move */
          rg = get_reg16(rg);
-         
+
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             mov_r16r(c, rg, other_reg);
@@ -746,15 +827,15 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-            
+
             mov_rm(
-               c, 
+               c,
                rg,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
                )
@@ -790,23 +871,23 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-           
+
             /* perform move operation from register to memory */
             mov_mr(
-               c, 
+               c,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
-               ), 
+               ),
                rg
             );
          }
          break;
-      
+
       case 0x8e:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
@@ -818,7 +899,7 @@ void cpu_exec(cpu *c, u8 opcode) {
          /* get the specific register from its binary representation */
          /* in this case, this register is the destination of the move */
          rg = get_sreg16(rg);
-         
+
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             mov_r16r(c, rg, other_reg);
@@ -835,15 +916,15 @@ void cpu_exec(cpu *c, u8 opcode) {
             } else {
                offset = 0;
             }
-            
+
             mov_rm(
-               c, 
+               c,
                rg,
                get_mrm_loc(
-                  c, 
-                  m_rm, 
-                  (segment_override != 0) 
-                  ?  get_base_override(c, segment_override) 
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
                   :  get_base_from_mrm(c, m_rm),
                   offset
                )
@@ -876,10 +957,10 @@ void cpu_exec(cpu *c, u8 opcode) {
                offset = 0;
             }
             src_addr = get_mrm_loc(
-               c, 
-               m_rm, 
-               (segment_override != 0) 
-               ?  get_base_override(c, segment_override) 
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
                :  get_base_from_mrm(c, m_rm),
                offset
             );
@@ -916,10 +997,10 @@ void cpu_exec(cpu *c, u8 opcode) {
                   }
 
                   src_addr = get_mrm_loc(
-                     c, 
-                     m_rm, 
-                     (segment_override != 0) 
-                     ?  get_base_override(c, segment_override) 
+                     c,
+                     m_rm,
+                     (segment_override != 0)
+                     ?  get_base_override(c, segment_override)
                      :  get_base_from_mrm(c, m_rm),
                      offset
                   );
@@ -955,10 +1036,10 @@ void cpu_exec(cpu *c, u8 opcode) {
                   }
 
                   src_addr = get_mrm_loc(
-                     c, 
-                     m_rm, 
-                     (segment_override != 0) 
-                     ?  get_base_override(c, segment_override) 
+                     c,
+                     m_rm,
+                     (segment_override != 0)
+                     ?  get_base_override(c, segment_override)
                      :  get_base_from_mrm(c, m_rm),
                      offset
                   );
@@ -993,7 +1074,8 @@ void cpu_dump(cpu *c) {
    printf(  "CS: %4x H\n",   c->cs);
    printf(  "DS: %4x H\n",   c->ds);
    printf(  "ES: %4x H\n",   c->es);
-   printf(  "SS: %4x H\n\n", c->ss);
+   printf(  "SS: %4x H\n", c->ss);
+   printf(  "FL: %4x H\n\n", c->flags);
 }
 
 /* dump the data stored at some location in cpu memory */

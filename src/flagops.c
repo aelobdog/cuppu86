@@ -50,9 +50,9 @@ void resetOF(cpu* c) { c->flags &= 0xf7ff; }
 
 u8 is_neg(u16 num, u8 bits) {
    if (bits == 8) {
-      if ((num & 0x08) == 0x08) return 1;
-   } else {
       if ((num & 0x80) == 0x80) return 1;
+   } else {
+      if ((num & 0x8000) == 0x8000) return 1;
    }
    return 0;
 }
