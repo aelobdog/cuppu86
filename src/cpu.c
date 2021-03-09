@@ -394,8 +394,6 @@ void inc_dec_r (cpu* c, reg r, i8 id) {
    u32 old_val, new_val;
    u8 bits;
 
-   printf("hello there");
-
    change1 = (id == -1) ? -0x0001 : 0x0001;
    change2 = (id == -1) ? -0x0100 : 0x0100;
    bits = 16;
@@ -497,8 +495,6 @@ void inc_dec_r (cpu* c, reg r, i8 id) {
    if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
    if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
-
-   printf("{ %d }\n", new_val-old_val);
 }
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
@@ -515,11 +511,8 @@ void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
       cpu_write_u8_at(c, addr, mem8 + change2);
    } else {
       mem16 = cpu_read_u16_at(c, addr);
-      printf("%x\n", mem16);
       old_val = mem16;
-      printf("%x\n", old_val);
       new_val = (u32)mem16 + (u32)change1;
-      printf("%x\n", new_val);
       cpu_write_u16_at(c, addr, mem16 + change1);
    }
 
@@ -528,8 +521,6 @@ void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
    if (is_neg(new_val, bw)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
    if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
-
-   printf("%x, %x, %x, %x \n", new_val, old_val, (u16)new_val, (u16)(old_val+1));
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -856,7 +847,6 @@ void cpu_exec(cpu *c, u8 opcode) {
 
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
-            printf("%d, %d", rg, other_reg);
             mov_r16r(c, other_reg, rg);
          } else {
             mod = MOD(next);

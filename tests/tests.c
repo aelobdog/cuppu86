@@ -60,8 +60,6 @@ void test_mov_mr_8(cpu* c){
    else printf("FAILED\n");
 }
 
-
-
 int main(int argc, char const *argv[]) {
   u32 addr;
   u8 mem[MAX_MEMORY];
