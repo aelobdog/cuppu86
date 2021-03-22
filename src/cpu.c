@@ -119,6 +119,11 @@ u8 get_reg16_val(cpu* c, reg r) {
    case BP: return c->bp;
    case SI: return c->si;
    case DI: return c->di;
+   case CS: return c->cs;
+   case DS: return c->ds;
+   case ES: return c->es;
+   case SS: return c->ss;
+   case FLG: return c->flags;
    default: break;
    }
    return 255; /* should never happen */
@@ -194,6 +199,7 @@ void mov_r16i(cpu *c, reg r, u16 val) {
    case CS: c->cs = val; break;
    case SS: c->ss = val; break;
    case DS: c->ds = val; break;
+   case FLG: c->flags = val; break;
    default: break; /* should never come here */
    }
 }
@@ -315,6 +321,9 @@ void mov_rm(cpu* c, reg dst, u32 addr) {
       mov_r16i(c, DS, cpu_read_u16_at(c, addr));
       break;
    /* ---------------------------------- */
+   case FLG:
+      mov_r16i(c, FLG, cpu_read_u16_at(c, addr));
+      break;
    default : return;
    }
 }
@@ -546,10 +555,6 @@ void push_r(cpu *c, reg r) {
 }
 
 void pop_r(cpu *c, reg r) {
-   /* u16 val = get_reg16_val(c, r);
-    if (c->sp > 1) c->sp -= 2; else return;
-    cpu_write_u16_at(c, base_offset(c->ss, c->sp), val);
-   */
    if(c->sp < 0xfffe) c->sp += 2; else return;
    mov_rm(c, r, base_offset(c->ss, c->sp - 2));
 }
@@ -686,6 +691,67 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xbd: mov_r16i(c, BP, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
       case 0xbe: mov_r16i(c, SI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
       case 0xbf: mov_r16i(c, DI, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+
+      case 0xa0:
+         src_val = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+         (c->ip)+=2;
+         mov_rm(
+            c,
+            AL,
+            base_offset(
+               (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  c->ds,
+               src_val
+            )
+         );
+      break;
+
+      case 0xa1:
+         src_val = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+         (c->ip)+=2;
+         mov_rm(
+            c,
+            AX,
+            base_offset(
+               (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  c->ds,
+               src_val
+            )
+         );
+      break;
+
+      case 0xa2:
+         src_val = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+         (c->ip)+=2;
+         mov_mr(
+            c,
+            base_offset(
+               (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  c->ds,
+               src_val
+            ),
+            AL
+         );
+      break;
+
+      case 0xa3:
+         src_val = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+         (c->ip)+=2;
+         mov_mr(
+            c,
+            base_offset(
+               (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  c->ds,
+               src_val
+            ),
+            AX
+         );
+      break;
+
 
       /* reg8/mem8 <- reg8 */
       case 0x88:
@@ -1070,52 +1136,99 @@ void cpu_exec(cpu *c, u8 opcode) {
                break;
             case 7: break; /* unused instruction */
          }
-         break;
+      break;
 
-         case 0x40: push_r(c, AX); break;
-         case 0x41: push_r(c, DX); break;
-         case 0x42: push_r(c, CX); break;
-         case 0x43: push_r(c, BX); break;
-         case 0x44: push_r(c, SP); break;
-         case 0x45: push_r(c, BP); break;
-         case 0x46: push_r(c, SI); break;
-         case 0x47: push_r(c, DI); break;
-         
-         case 0x48: push_r(c, AX); break;
-         case 0x49: push_r(c, DX); break;
-         case 0x4A: push_r(c, CX); break;
-         case 0x4B: push_r(c, BX); break;
-         case 0x4C: push_r(c, SP); break;
-         case 0x4D: push_r(c, BP); break;
-         case 0x4E: push_r(c, SI); break;
-         case 0x4F: push_r(c, DI); break;
-         
-         case 0x50: push_r(c, AX); break;
-         case 0x51: push_r(c, DX); break;
-         case 0x52: push_r(c, CX); break;
-         case 0x53: push_r(c, BX); break;
-         case 0x54: push_r(c, SP); break;
-         case 0x55: push_r(c, BP); break;
-         case 0x56: push_r(c, SI); break;
-         case 0x57: push_r(c, DI); break;
+      case 0x8f:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
 
-         case 0x58: pop_r(c, AX); break;
-         case 0x59: pop_r(c, DX); break;
-         case 0x5A: pop_r(c, CX); break;
-         case 0x5B: pop_r(c, BX); break;
-         case 0x5C: pop_r(c, SP); break;
-         case 0x5D: pop_r(c, BP); break;
-         case 0x5E: pop_r(c, SI); break;
-         case 0x5F: pop_r(c, DI); break;
+         /* extract binary information about reg and mrm */
+         rg  = REG(next);
+         m_rm = MRM(next);
 
-         case 0x60: case 0x61: case 0x62: case 0x63: 
-         case 0x64: case 0x65: case 0x66: case 0x67: 
-         case 0x68: case 0x69: case 0x6a: case 0x6b:
-         case 0x6c: case 0x6d: case 0x6e: case 0x8f: 
-         break; /* unused */ 
+         switch (rg) {
+            case 0:
+               if (m_rm >= 24) {
+                  other_reg = get_reg16(R_M(next));
+                  if(c->sp < 0xfffe) c->sp += 2; else break;
+                  mov_rm(c, other_reg, base_offset(c->ss, c->sp - 2));
+               } else {
+                  mod = MOD(next);
+                  /* read the offset from memory if required */
+                  if (m_rm == 6 || mod == 2) {
+                     offset = cpu_read_u16_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 2;
+                  } else if (mod == 1) {
+                     offset = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+                     (c->ip) += 1;
+                  } else {
+                     offset = 0;
+                  }
+
+                  src_addr = get_mrm_loc( /* actually here, src_addr is destination */
+                     c,
+                     m_rm,
+                     (segment_override != 0)
+                     ?  get_base_override(c, segment_override)
+                     :  get_base_from_mrm(c, m_rm),
+                     offset
+                  );
+
+                  if (c->sp < 0xfffe) c->sp += 2; else break;
+                  src_val = cpu_read_u16_at(c, base_offset(c->ss, c->sp - 2));
+                  cpu_write_u16_at(c, src_addr, src_val);
+               }
+            default: break; /* unused */
+         }
+      break;
+
+      case 0x40: inc_dec_r(c, AX, 1); break;
+      case 0x41: inc_dec_r(c, DX, 1); break;
+      case 0x42: inc_dec_r(c, CX, 1); break;
+      case 0x43: inc_dec_r(c, BX, 1); break;
+      case 0x44: inc_dec_r(c, SP, 1); break;
+      case 0x45: inc_dec_r(c, BP, 1); break;
+      case 0x46: inc_dec_r(c, SI, 1); break;
+      case 0x47: inc_dec_r(c, DI, 1); break;
       
-   }
+      case 0x48: inc_dec_r(c, AX, -1); break;
+      case 0x49: inc_dec_r(c, DX, -1); break;
+      case 0x4A: inc_dec_r(c, CX, -1); break;
+      case 0x4B: inc_dec_r(c, BX, -1); break;
+      case 0x4C: inc_dec_r(c, SP, -1); break;
+      case 0x4D: inc_dec_r(c, BP, -1); break;
+      case 0x4E: inc_dec_r(c, SI, -1); break;
+      case 0x4F: inc_dec_r(c, DI, -1); break;
+      
+      case 0x50: push_r(c, AX); break;
+      case 0x51: push_r(c, DX); break;
+      case 0x52: push_r(c, CX); break;
+      case 0x53: push_r(c, BX); break;
+      case 0x54: push_r(c, SP); break;
+      case 0x55: push_r(c, BP); break;
+      case 0x56: push_r(c, SI); break;
+      case 0x57: push_r(c, DI); break;
+      case 0x9c: push_r(c, FLG); break;
+      case 0x06: push_r(c, ES); break;
+      case 0x0e: push_r(c, CS); break;
+      case 0x16: push_r(c, SS); break;
+      case 0x1e: push_r(c, DS); break;
 
+      case 0x58: pop_r(c, AX); break;
+      case 0x59: pop_r(c, DX); break;
+      case 0x5A: pop_r(c, CX); break;
+      case 0x5B: pop_r(c, BX); break;
+      case 0x5C: pop_r(c, SP); break;
+      case 0x5D: pop_r(c, BP); break;
+      case 0x5E: pop_r(c, SI); break;
+      case 0x5F: pop_r(c, DI); break;
+      case 0x9d: pop_r(c, FLG); break;
+      case 0x07: pop_r(c, ES); break;
+      case 0x17: pop_r(c, SS); break;
+      case 0x1f: pop_r(c, DS); break;
+   
+      default: break; /* nops and unused */
+   }
    /* setting the segment override to 0 after executing every instruction */
    segment_override = 0;
 }
