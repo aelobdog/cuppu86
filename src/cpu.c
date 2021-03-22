@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "types.h"
 #include "flagops.h"
+#include "memory.h"
 
 /* helper funtion to fetch the location
  * indicated by mod+r/m fields of the instruction */
@@ -104,6 +105,21 @@ u8 get_reg16(u8 regnum) {
    case 5: return BP;
    case 6: return SI;
    case 7: return DI;
+   }
+   return 255; /* should never happen */
+}
+
+u8 get_reg16_val(cpu* c, reg r) {
+   switch(r) {
+   case AX: return c->ax;
+   case CX: return c->cx;
+   case DX: return c->dx;
+   case BX: return c->bx;
+   case SP: return c->sp;
+   case BP: return c->bp;
+   case SI: return c->si;
+   case DI: return c->di;
+   default: break;
    }
    return 255; /* should never happen */
 }
@@ -521,6 +537,21 @@ void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
    if (is_neg(new_val, bw)) setSF(c); else resetSF(c);
    if (has_even_parity(new_val)) setPF(c); else resetPF(c);
    if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
+}
+
+void push_r(cpu *c, reg r) {
+   u16 val = get_reg16_val(c, r);
+   if (c->sp > 1) c->sp -= 2; else return;
+   cpu_write_u16_at(c, base_offset(c->ss, c->sp), val);
+}
+
+void pop_r(cpu *c, reg r) {
+   /* u16 val = get_reg16_val(c, r);
+    if (c->sp > 1) c->sp -= 2; else return;
+    cpu_write_u16_at(c, base_offset(c->ss, c->sp), val);
+   */
+   if(c->sp < 0xfffe) c->sp += 2; else return;
+   mov_rm(c, r, base_offset(c->ss, c->sp - 2));
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -969,10 +1000,10 @@ void cpu_exec(cpu *c, u8 opcode) {
          m_rm = MRM(next);
 
          switch (rg) {
-            case 0: /* increment m 16 instruction */
+            case 0: case 1: /* inc/dec m 16 instruction */
                if (m_rm >= 24) {
                   other_reg = get_reg16(R_M(next));
-                  inc_dec_r(c, other_reg, 1);
+                  inc_dec_r(c, other_reg, (rg == 0 ? 1 : -1));
                } else {
                   mod = MOD(next);
                   /* read the offset from memory if required */
@@ -994,10 +1025,8 @@ void cpu_exec(cpu *c, u8 opcode) {
                      :  get_base_from_mrm(c, m_rm),
                      offset
                   );
-                  inc_dec_m(c, src_addr, 16, 1);
-               break;
-
-            case 1: /* decrement m 16 instruction */
+                  inc_dec_m(c, src_addr, 16, (rg == 0 ? 1 : -1));
+               }
                break;
             case 2: /* intrasegment call r/m 16 instruction */
                break;
@@ -1035,20 +1064,62 @@ void cpu_exec(cpu *c, u8 opcode) {
                   );
 
                   src_val = cpu_read_u16_at(c, src_addr);
-                  c->sp -= 2;
+                  if (c->sp > 1) c->sp -= 2; else return;
                   cpu_write_u16_at(c, base_offset(c->ss, c->sp), src_val);
                }
                break;
             case 7: break; /* unused instruction */
          }
-
          break;
-      }
+
+         case 0x40: push_r(c, AX); break;
+         case 0x41: push_r(c, DX); break;
+         case 0x42: push_r(c, CX); break;
+         case 0x43: push_r(c, BX); break;
+         case 0x44: push_r(c, SP); break;
+         case 0x45: push_r(c, BP); break;
+         case 0x46: push_r(c, SI); break;
+         case 0x47: push_r(c, DI); break;
+         
+         case 0x48: push_r(c, AX); break;
+         case 0x49: push_r(c, DX); break;
+         case 0x4A: push_r(c, CX); break;
+         case 0x4B: push_r(c, BX); break;
+         case 0x4C: push_r(c, SP); break;
+         case 0x4D: push_r(c, BP); break;
+         case 0x4E: push_r(c, SI); break;
+         case 0x4F: push_r(c, DI); break;
+         
+         case 0x50: push_r(c, AX); break;
+         case 0x51: push_r(c, DX); break;
+         case 0x52: push_r(c, CX); break;
+         case 0x53: push_r(c, BX); break;
+         case 0x54: push_r(c, SP); break;
+         case 0x55: push_r(c, BP); break;
+         case 0x56: push_r(c, SI); break;
+         case 0x57: push_r(c, DI); break;
+
+         case 0x58: pop_r(c, AX); break;
+         case 0x59: pop_r(c, DX); break;
+         case 0x5A: pop_r(c, CX); break;
+         case 0x5B: pop_r(c, BX); break;
+         case 0x5C: pop_r(c, SP); break;
+         case 0x5D: pop_r(c, BP); break;
+         case 0x5E: pop_r(c, SI); break;
+         case 0x5F: pop_r(c, DI); break;
+
+         case 0x60: case 0x61: case 0x62: case 0x63: 
+         case 0x64: case 0x65: case 0x66: case 0x67: 
+         case 0x68: case 0x69: case 0x6a: case 0x6b:
+         case 0x6c: case 0x6d: case 0x6e: case 0x8f: 
+         break; /* unused */ 
+      
    }
 
    /* setting the segment override to 0 after executing every instruction */
    segment_override = 0;
 }
+
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {

@@ -14,6 +14,6 @@
  * for deallocating the memory that was
  * allocated using mem_create.
  */
-u8* mem_create();
+u8* mem_load_code(u16 size, char* filename);
 
 #endif
