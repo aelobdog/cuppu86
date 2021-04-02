@@ -68,6 +68,8 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
     * returns a u32 but in reality it is a
     * 20 bit address to be able to access
     * a max of 1Mb space.                  */
+   
+   u32 get_mrm_loc(cpu* c, u8 mrm, u16 base_segment, u16 offset);
    u32 base_offset(u16 base, u16 offset);
    u16 switch_bytes(u16 val);
 
