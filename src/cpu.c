@@ -1293,10 +1293,31 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 1: break; /* ror 8 1 */
          case 2: break; /* rcl 8 1 */
          case 3: break; /* rcr 8 1 */
+
          case 4: 
+         if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
-            shift_left_8(c, other_reg, get_reg8_val(c, CL));
-            break; 
+            shift_left_r(c, other_reg, get_reg8_val(c, CL), 8);
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+
+            shift_left_m(
+               c, 
+               get_mrm_loc(
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               get_reg8_val(c, CL), 
+               8
+            );
+         }
+         break;
+
          case 5: break; /* shr 8 1 */
          case 6: break; /* unused  */
          case 7: break; /* sar 8 1 */
@@ -1310,10 +1331,31 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 1: break; /* ror 8 1 */
          case 2: break; /* rcl 8 1 */
          case 3: break; /* rcr 8 1 */
+
          case 4: 
+         if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
-            shift_left_16(c, other_reg, get_reg8_val(c, CL));
-            break; 
+            shift_left_r(c, other_reg, get_reg8_val(c, CL), 16);
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+
+            shift_left_m(
+               c, 
+               get_mrm_loc(
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               get_reg8_val(c, CL), 
+               16
+            );
+         }
+         break;
+
          case 5: break; /* shr 8 1 */
          case 6: break; /* unused  */
          case 7: break; /* sar 8 1 */
