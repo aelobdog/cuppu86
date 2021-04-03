@@ -634,16 +634,34 @@ void pop_r(cpu *c, reg r) {
    mov_rm(c, r, base_offset(c->ss, c->sp - 2));
 }
 
-void shift_left_8(cpu* c, reg r, int shift_amount) {
-   u8 val = get_reg8_val(c, r);
-   val = val << shift_amount;
-   set_reg8(c, r, val);
+void shift_left_r(cpu* c, reg r, int shift_amount, u8 memsize) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v8 = get_reg8_val(c, r);
+      value.v8 = value.v8 << shift_amount;
+      set_reg8(c, r, value.v8);
+   } else {
+      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = get_reg16_val(c, r);
+      value.v16 = value.v16 << shift_amount;
+      set_reg16(c, r, value.v16);
+   }
 }
 
-void shift_left_16(cpu* c, reg r, int shift_amount) {
-   u16 val = get_reg16_val(c, r);
-   val = val << shift_amount;
-   set_reg16(c, r, val);
+void shift_left_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v8 = cpu_read_u8_at(c, addr);
+      value.v8 = value.v8 << shift_amount;
+      cpu_write_u8_at(c, addr, value.v8);
+   } else {
+      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = cpu_read_u16_at(c, addr);
+      value.v16 = value.v16 << shift_amount;
+      cpu_write_u16_at(c, addr, value.v16);
+   }
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -1200,10 +1218,31 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 1: break; /* ror 8 1 */
          case 2: break; /* rcl 8 1 */
          case 3: break; /* rcr 8 1 */
+         
          case 4: 
+         if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
-            shift_left_8(c, other_reg, 1);
-            break; 
+            shift_left_r(c, other_reg, 1, 8);
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+
+            shift_left_m(
+               c, 
+               get_mrm_loc(
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               1, 
+               8
+            );
+         }
+         break;
+
          case 5: break; /* shr 8 1 */
          case 6: break; /* unused  */
          case 7: break; /* sar 8 1 */
@@ -1218,9 +1257,29 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 2: break; /* rcl 16 1 */
          case 3: break; /* rcr 16 1 */
          case 4: 
+         if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
-            shift_left_16(c, other_reg, 1);
-            break; 
+            shift_left_r(c, other_reg, 1, 16);
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+
+            shift_left_m(
+               c, 
+               get_mrm_loc(
+                  c,
+                  m_rm,
+                  (segment_override != 0)
+                  ?  get_base_override(c, segment_override)
+                  :  get_base_from_mrm(c, m_rm),
+                  offset
+               ), 
+               1, 
+               16
+            );
+         }
+         break;
+
          case 5: break; /* shr 16 1 */
          case 6: break; /* unused  */
          case 7: break; /* sar 16 1 */

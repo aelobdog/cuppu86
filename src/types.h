@@ -13,4 +13,9 @@ typedef uint64_t u64;
 typedef int32_t  i32;
 typedef int64_t  i64;
 
+typedef union val {
+   u8 v8;
+   u16 v16;
+} val;
+
 #endif
