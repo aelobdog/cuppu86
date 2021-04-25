@@ -634,12 +634,12 @@ void pop_r(cpu *c, reg r) {
 void shift_left_r(cpu* c, reg r, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = get_reg8_val(c, r);
       value.v8 = value.v8 << shift_amount;
       set_reg8(c, r, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = get_reg16_val(c, r);
       value.v16 = value.v16 << shift_amount;
       set_reg16(c, r, value.v16);
@@ -649,12 +649,12 @@ void shift_left_r(cpu* c, reg r, int shift_amount, u8 memsize) {
 void shift_left_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
       value.v8 = value.v8 << shift_amount;
       cpu_write_u8_at(c, addr, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = cpu_read_u16_at(c, addr);
       value.v16 = value.v16 << shift_amount;
       cpu_write_u16_at(c, addr, value.v16);
@@ -664,12 +664,12 @@ void shift_left_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
 void shift_uright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = get_reg8_val(c, r);
       value.v8 = (u8)(value.v8) >> shift_amount;
       set_reg8(c, r, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = get_reg16_val(c, r);
       value.v16 = (u16)(value.v16) >> shift_amount;
       set_reg16(c, r, value.v16);
@@ -679,12 +679,12 @@ void shift_uright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
 void shift_uright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
       value.v8 = (u8)(value.v8) >> shift_amount;
       cpu_write_u8_at(c, addr, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = cpu_read_u16_at(c, addr);
       value.v16 = (u16)(value.v16) >> shift_amount;
       cpu_write_u16_at(c, addr, value.v16);
@@ -694,12 +694,12 @@ void shift_uright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
 void shift_iright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = get_reg8_val(c, r);
       value.v8 = (value.v8) >> shift_amount;
       set_reg8(c, r, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = get_reg16_val(c, r);
       value.v16 = (value.v16) >> shift_amount;
       set_reg16(c, r, value.v16);
@@ -709,12 +709,12 @@ void shift_iright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
 void shift_iright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
       value.v8 = (value.v8) >> shift_amount;
       cpu_write_u8_at(c, addr, value.v8);
    } else {
-      value.v16 = 0; // just to ensure that there is no data corruption
+      value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = cpu_read_u16_at(c, addr);
       value.v16 = (value.v16) >> shift_amount;
       cpu_write_u16_at(c, addr, value.v16);
