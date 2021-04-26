@@ -54,8 +54,10 @@ u8 get_reg8(u8 regnum);
 u8 get_reg16(u8 regnum);
 u8 get_reg8_val(cpu* c, reg r);
 u8 get_sreg16(u8 regnum);
+u8 rotate8(u8 val, u8 rby, i8 rl);
 
 u16 switch_bytes(u16 val);
+u16 rotate16(u16 val, u8 rby, i8 rl);
 u16 get_reg16_val(cpu* c, reg r);
 u16 cpu_read_u16_at(cpu* c, u32 addr);
 u16 get_base_override(cpu* c, u8 ovr);
@@ -81,4 +83,9 @@ void shift_uright_r(cpu* c, reg r, int shift_amount, u8 memsize);
 void shift_uright_r(cpu* c, reg r, int shift_amount, u8 memsize);
 void shift_iright_r(cpu* c, reg r, int shift_amount, u8 memsize);
 void shift_iright_r(cpu* c, reg r, int shift_amount, u8 memsize);
+void rotate_left_r(cpu* c, reg r, int rotate_amount, u8 memsize);
+void rotate_left_m(cpu* c, u32 addr, int rotate_amount, u8 memsize);
+void rotate_right_r(cpu* c, reg r, int rotate_amount, u8 memsize);
+void rotate_right_m(cpu* c, u32 addr, int rotate_amount, u8 memsize);
+
 #endif
