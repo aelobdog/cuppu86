@@ -8,7 +8,7 @@ typedef enum registers {
    ES, CS, DS, SS, FLG
 } reg;
 
-typedef enum flags {
+typedef enum flag {
    CF, PF, AF, ZF, SF, OF,
    TF, IF, DF
 } flag;
@@ -17,5 +17,6 @@ typedef enum flags {
 #define MRM(x) ((u8)((x & 0x07) + ((x & 0xc0) >> 3)))
 #define R_M(x) ((u8)((x & 0x07)))
 #define MOD(x) ((u8)((x & 0xc0) >> 6))
+#define BIT(n, x) ( (x & (0x0001 << n)) ? 1 : 0)
 
 #endif

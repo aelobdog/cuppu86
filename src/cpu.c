@@ -816,6 +816,21 @@ void rotate_left_r(cpu* c, reg r, int rotate_amount, u8 memsize) {
    }
 }
 
+void rotate_left_m(cpu* c, u32 addr, int rotate_amount, u8 memsize) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v8 = cpu_read_u8_at(c, addr);
+      value.v8 = rotate8(value.v8, rotate_amount, -1);
+      cpu_write_u8_at(c, addr, value.v8);
+   } else {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v16 = cpu_read_u16_at(c, addr);
+      value.v16 = rotate16(value.v16, rotate_amount, -1);
+      cpu_write_u16_at(c, addr, value.v16);
+   }
+}
+
 void rotate_right_r(cpu* c, reg r, int rotate_amount, u8 memsize) {
    val value;
    if (memsize == 8) {
@@ -828,6 +843,21 @@ void rotate_right_r(cpu* c, reg r, int rotate_amount, u8 memsize) {
       value.v16 = get_reg16_val(c, r);
       value.v16 = rotate16(value.v16, rotate_amount, 1);
       set_reg16(c, r, value.v16);
+   }
+}
+
+void rotate_right_m(cpu* c, u32 addr, int rotate_amount, u8 memsize) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v8 = cpu_read_u8_at(c, addr);
+      value.v8 = rotate8(value.v8, rotate_amount, 1);
+      cpu_write_u8_at(c, addr, value.v8);
+   } else {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v16 = cpu_read_u16_at(c, addr);
+      value.v16 = rotate16(value.v16, rotate_amount, 1);
+      cpu_write_u16_at(c, addr, value.v16);
    }
 }
 
