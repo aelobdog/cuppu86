@@ -151,17 +151,38 @@ void shift_left_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
 
 void shift_uright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
    val value;
+   u8 old_msb;
+   old_msb = 0;
+   
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = get_reg8_val(c, r);
+      old_msb = BIT(7, value.v8);
+
+      if (shift_amount > 0 && shift_amount < 8) {
+         if (BIT((shift_amount - 1), value.v8)) setCF(c);
+         else resetCF(c);
+      }
+
       value.v8 = (u8)(value.v8) >> shift_amount;
       set_reg8(c, r, value.v8);
+
    } else {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = get_reg16_val(c, r);
+      old_msb = BIT(15, value.v8);
+
+      if (shift_amount > 0 && shift_amount < 16) {
+         if (BIT((shift_amount - 1), value.v16)) setCF(c);
+         else resetCF(c);
+      }
+
       value.v16 = (u16)(value.v16) >> shift_amount;
       set_reg16(c, r, value.v16);
    }
+
+   if (old_msb == 0) resetOF(c);
+   else setOF(c);
 }
 
 void shift_uright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
