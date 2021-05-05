@@ -340,6 +340,8 @@ void rotate_left_r(cpu* c, reg r, int rotate_amount, u8 memsize) {
 
 void rotate_left_m(cpu* c, u32 addr, int rotate_amount, u8 memsize) {
    val value;
+   int ramt;
+   ramt = rotate_amount % memsize;
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
@@ -397,6 +399,8 @@ void rotate_right_m(cpu* c, u32 addr, int rotate_amount, u8 memsize) {
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
+      if (BIT(7, value.v8) == BIT((bit), value.v8)) resetOF(c);
+      else setOF(c);
       value.v8 = rotate8(value.v8, rotate_amount, 1);
       cpu_write_u8_at(c, addr, value.v8);
       if (BIT(7, value.v8)) setCF(c);
@@ -410,5 +414,87 @@ void rotate_right_m(cpu* c, u32 addr, int rotate_amount, u8 memsize) {
       cpu_write_u16_at(c, addr, value.v16);
       if (BIT(15, value.v16)) setCF(c);
       else resetCF(c);
+   }
+}
+
+u8 rot_tc_one_8(cpu* c, u8 val, i8 rl) {
+   u8 lsb, msb, cf;
+   lsb = BIT(0, val);
+   msb = BIT(7, val);
+   cf = getCF(c);
+
+   if (rl == 1) {
+      val >>= 1;
+      if (lsb == 1) setCF(c); else resetCF(c);
+      if (cf == 1) val |= 0x10; else val &= 0x7f;
+      if (cf == msb) resetOF(c); else setOF(c);
+   } else {
+      val <<= 1;
+      if (msb == 1) setCF(c); else resetCF(c);
+      if (cf == 1) val |= 0x01; else val &= 0xfe;
+      if (BIT(7, val) == msb) resetOF(c); else setOF(c);
+   }
+   return val;
+}
+
+u8 rot_tc_8(cpu* c, u8 val, int rotate_amount, i8 rl) {
+   for (int i = 0; i < rotate_amount; i++) {
+      val = rot_tc_one_8(c, val, rl);
+   }
+}
+
+u16 rot_tc_one_16(cpu* c, u16 val, i8 rl) {
+   u8 lsb, msb, cf;
+   lsb = BIT(0, val);
+   msb = BIT(15, val);
+   cf = getCF(c);
+
+   if (rl == 1) {
+      val >>= 1;
+      if (lsb == 1) setCF(c); else resetCF(c);
+      if (cf == 1) val |= 0x1000; else val &= 0x7fff;
+      if (cf == msb) resetOF(c); else setOF(c);
+   } else {
+      val <<= 1;
+      if (msb == 1) setCF(c); else resetCF(c);
+      if (cf == 1) val |= 0x0001; else val &= 0xfffe;
+      if (BIT(15, val) == msb) resetOF(c); else setOF(c);
+   }
+   return val;
+}
+
+u16 rot_tc_16(cpu* c, u16 val, int rotate_amount, i8 rl) {
+   for (int i = 0; i < rotate_amount; i++) {
+      val = rot_tc_one_16(c, val, rl);
+   }
+}
+
+void rotate_l_r_tc(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v8 = get_reg8_val(c, r);
+      value.v8 = rot_tc_8(c, value.v8, rotate_amount, rl);
+      set_reg8(c, r, value.v8);
+   } else {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v16 = get_reg16_val(c, r);
+      value.v16 = rot_tc_16(c, value.v16, rotate_amount, rl);
+      set_reg16(c, r, value.v16);
+   }
+}
+
+void rotate_l_m_tc(cpu* c, u32 addr, int rotate_amount, u8 memsize, i8 rl) {
+   val value;
+   if (memsize == 8) {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v8 = cpu_read_u8_at(c, addr);
+      value.v8 = rot_tc_8(c, value.v8, rotate_amount, rl);
+      cpu_write_u8_at(c, addr, value.v8);
+   } else {
+      value.v16 = 0; /* just to ensure that there is no data corruption */
+      value.v16 = cpu_read_u16_at(c, addr);
+      value.v16 = rot_tc_16(c, value.v16, rotate_amount, rl);
+      cpu_write_u16_at(c, addr, value.v16);
    }
 }

@@ -20,4 +20,12 @@ void rotate_left_m(cpu* c, u32 addr, int rotate_amount, u8 memsize);
 void rotate_right_r(cpu* c, reg r, int rotate_amount, u8 memsize);
 void rotate_right_m(cpu* c, u32 addr, int rotate_amount, u8 memsize);
 
+u8 rot_tc_one_8(cpu* c, u8 val, i8 rl);
+u16 rot_tc_one_16(cpu* c, u16 val, i8 rl);
+u8 rot_tc_8(cpu* c, u8 val, int rotate_amount, i8 rl);
+u16 rot_tc_16(cpu* c, u16 val, int rotate_amount, i8 rl);
+
+void rotate_l_r_tc(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl);
+void rotate_l_m_tc(cpu* c, u32 addr, int rotate_amount, u8 memsize, i8 rl);
+
 #endif
