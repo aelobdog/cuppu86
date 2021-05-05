@@ -63,14 +63,6 @@ u16 get_base_from_mrm(cpu* c, u8 mrm);
 u32 base_offset(u16 base, u16 offset);
 u32 get_mrm_loc(cpu *c, u8 mrm, u16 base_segment, u16 offset);
 
-void mov_r16i(cpu* c, reg dst, u16 val);
-void mov_r8i(cpu* c, reg dst, u8 val);
-void mov_r16r(cpu* c, reg dst, reg src);
-void mov_r8r(cpu* c, reg dst, reg src);
-void mov_rm(cpu* c, reg dst, u32 addr);
-void mov_mr(cpu* c, u32 addr, reg src);
-void inc_dec_r(cpu* c, reg r, i8 id);
-void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id);
 void push_r(cpu *c, reg r);
 void pop_r(cpu *c, reg r);
 

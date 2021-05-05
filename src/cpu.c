@@ -4,6 +4,8 @@
 #include "flagops.h"
 #include "memory.h"
 #include "rot_shf.h"
+#include "inc_dec.h"
+#include "move.h"
 
 /* MOD and R/M are treated as a combined entity.
  * For move instruction :
@@ -42,7 +44,6 @@
 
 /* global variable to indicate if segment_override is applied or not */
 u8 segment_override = 0;
-
 
 /* registers and default segments that they offset
  * +----------+----------+
@@ -96,32 +97,32 @@ u8 get_reg8(u8 regnum) {
 
 void set_reg8(cpu* c, reg r, u8 val) {
    switch(r) {
-   case AL: c->ax = (c->ax & 0xff00) + val;
-   case BL: c->bx = (c->bx & 0xff00) + val;
-   case CL: c->cx = (c->cx & 0xff00) + val;
-   case DL: c->dx = (c->dx & 0xff00) + val;
-   case AH: c->ax = (c->ax & 0x00ff) + (val << 8);
-   case BH: c->bx = (c->bx & 0x00ff) + (val << 8);
-   case CH: c->cx = (c->cx & 0x00ff) + (val << 8);
-   case DH: c->dx = (c->dx & 0x00ff) + (val << 8);
+   case AL: c->ax = (c->ax & 0xff00) + val; break;
+   case BL: c->bx = (c->bx & 0xff00) + val; break;
+   case CL: c->cx = (c->cx & 0xff00) + val; break;
+   case DL: c->dx = (c->dx & 0xff00) + val; break;
+   case AH: c->ax = (c->ax & 0x00ff) + (val << 8); break;
+   case BH: c->bx = (c->bx & 0x00ff) + (val << 8); break;
+   case CH: c->cx = (c->cx & 0x00ff) + (val << 8); break;
+   case DH: c->dx = (c->dx & 0x00ff) + (val << 8); break;
    default: break;
    }
 }
 
 void set_reg16(cpu* c, reg r, u16 val) {
    switch(r) {
-   case AX: c->ax = val;
-   case CX: c->cx = val;
-   case DX: c->dx = val;
-   case BX: c->bx = val;
-   case SP: c->sp = val;
-   case BP: c->bp = val;
-   case SI: c->si = val;
-   case DI: c->di = val;
-   case CS: c->cs = val;
-   case DS: c->ds = val;
-   case ES: c->es = val;
-   case SS: c->ss = val;
+   case AX: c->ax = val; break;
+   case CX: c->cx = val; break;
+   case DX: c->dx = val; break;
+   case BX: c->bx = val; break;
+   case SP: c->sp = val; break;
+   case BP: c->bp = val; break;
+   case SI: c->si = val; break;
+   case DI: c->di = val; break;
+   case CS: c->cs = val; break;
+   case DS: c->ds = val; break;
+   case ES: c->es = val; break;
+   case SS: c->ss = val; break;
    /* not including the flag register here */ 
    default: break;
    }
@@ -256,369 +257,6 @@ u16 get_base_from_mrm(cpu* c, u8 mrm) {
    return 255; /* should never happen */
 }
 
-void mov_r16i(cpu *c, reg r, u16 val) {
-   switch (r) {
-   case AX: c->ax = val; break;
-   case BX: c->bx = val; break;
-   case CX: c->cx = val; break;
-   case DX: c->dx = val; break;
-   case SP: c->sp = val; break;
-   case BP: c->bp = val; break;
-   case SI: c->si = val; break;
-   case DI: c->di = val; break;
-   case ES: c->es = val; break;
-   case CS: c->cs = val; break;
-   case SS: c->ss = val; break;
-   case DS: c->ds = val; break;
-   case FLG: c->flags = val; break;
-   default: break; /* should never come here */
-   }
-}
-
-void mov_r8i(cpu *c, reg r, u8 val) {
-   switch (r) {
-      case AL: c->ax = (c->ax & 0xff00) + (u16)val; break;
-      case CL: c->cx = (c->cx & 0xff00) + (u16)val; break;
-      case DL: c->dx = (c->dx & 0xff00) + (u16)val; break;
-      case BL: c->bx = (c->bx & 0xff00) + (u16)val; break;
-      case AH: c->ax = (c->ax & 0xff) + ((u16)val << 8); break;
-      case CH: c->cx = (c->cx & 0xff) + ((u16)val << 8); break;
-      case DH: c->dx = (c->dx & 0xff) + ((u16)val << 8); break;
-      case BH: c->bx = (c->bx & 0xff) + ((u16)val << 8); break;
-      default: break; /* should never come here */
-   }
-}
-
-void mov_r16r(cpu* c, reg dst, reg src) {
-   u16 src_val;
-   switch (src) {
-      case AX: src_val = c->ax; break;
-      case CX: src_val = c->cx; break;
-      case DX: src_val = c->dx; break;
-      case BX: src_val = c->bx; break;
-      case ES: src_val = c->es; break;
-      case CS: src_val = c->cs; break;
-      case SS: src_val = c->ss; break;
-      case DS: src_val = c->ds; break;
-      default: break; /* should never come here */
-   }
-   mov_r16i(c, dst, src_val);
-}
-
-void mov_r8r(cpu* c, reg dst, reg src) {
-   u8 src_val;
-   switch (src) {
-      case AL: src_val = (u8)(c->ax & 0xff); break;
-      case CL: src_val = (u8)(c->cx & 0xff); break;
-      case DL: src_val = (u8)(c->dx & 0xff); break;
-      case BL: src_val = (u8)(c->bx & 0xff); break;
-      case AH: src_val = (u8)((c->ax & 0xff00) >> 8); break;
-      case CH: src_val = (u8)((c->cx & 0xff00) >> 8); break;
-      case DH: src_val = (u8)((c->dx & 0xff00) >> 8); break;
-      case BH: src_val = (u8)((c->bx & 0xff00) >> 8); break;
-      default: break; /* should never come here */
-   }
-   mov_r8i(c, dst, src_val);
-}
-
-void mov_rm(cpu* c, reg dst, u32 addr) {
-   switch(dst) {
-   /* ---------------------------------- */
-   case AL:
-      mov_r8i(c, AL, cpu_read_u8_at(c, addr));
-      break;
-   case BL:
-      mov_r8i(c, BL, cpu_read_u8_at(c, addr));
-      break;
-   case CL:
-      mov_r8i(c, CL, cpu_read_u8_at(c, addr));
-      break;
-   case DL:
-      mov_r8i(c, DL, cpu_read_u8_at(c, addr));
-      break;
-   /* ---------------------------------- */
-   case AH:
-      mov_r8i(c, AH, cpu_read_u8_at(c, addr));
-      break;
-   case BH:
-      mov_r8i(c, BH, cpu_read_u8_at(c, addr));
-      break;
-   case CH:
-      mov_r8i(c, CH, cpu_read_u8_at(c, addr));
-      break;
-   case DH:
-      mov_r8i(c, DH, cpu_read_u8_at(c, addr));
-      break;
-   /* ---------------------------------- */
-   case AX:
-      mov_r16i(c, AX, cpu_read_u16_at(c, addr));
-      break;
-   case BX:
-      mov_r16i(c, BX, cpu_read_u16_at(c, addr));
-      break;
-   case CX:
-      mov_r16i(c, CX, cpu_read_u16_at(c, addr));
-      break;
-   case DX:
-      mov_r16i(c, DX, cpu_read_u16_at(c, addr));
-      break;
-   /* ---------------------------------- */
-   case SI:
-      mov_r16i(c, SI, cpu_read_u16_at(c, addr));
-      break;
-   case DI:
-      mov_r16i(c, DI, cpu_read_u16_at(c, addr));
-      break;
-   case SP:
-      mov_r16i(c, SP, cpu_read_u16_at(c, addr));
-      break;
-   case BP:
-      mov_r16i(c, BP, cpu_read_u16_at(c, addr));
-      break;
-   case IP:
-      mov_r16i(c, IP, cpu_read_u16_at(c, addr));
-      break;
-   /* ---------------------------------- */
-   case ES:
-      mov_r16i(c, ES, cpu_read_u16_at(c, addr));
-      break;
-   case CS:
-      mov_r16i(c, CS, cpu_read_u16_at(c, addr));
-      break;
-   case SS:
-      mov_r16i(c, SS, cpu_read_u16_at(c, addr));
-      break;
-   case DS:
-      mov_r16i(c, DS, cpu_read_u16_at(c, addr));
-      break;
-   /* ---------------------------------- */
-   case FLG:
-      mov_r16i(c, FLG, cpu_read_u16_at(c, addr));
-      break;
-   default : return;
-   }
-}
-
-void mov_mr(cpu* c, u32 addr, reg src) {
-   u8 src_u8; /* required only for 8 bit registers */
-
-   switch(src) {
-   /* ---------------------------------- */
-   case AL:
-      src_u8 = (u8)(c->ax & 0xff);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case BL:
-      src_u8 = (u8)(c->bx & 0xff);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case CL:
-      src_u8 = (u8)(c->cx & 0xff);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case DL:
-      src_u8 = (u8)(c->dx & 0xff);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   /* ---------------------------------- */
-   case AH:
-      src_u8 = (u8)((c->ax & 0xff00) >> 8);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case BH:
-      src_u8 = (u8)((c->bx & 0xff00) >> 8);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case CH:
-      src_u8 = (u8)((c->cx & 0xff00) >> 8);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   case DH:
-      src_u8 = (u8)((c->dx & 0xff00) >> 8);
-      cpu_write_u8_at(c, addr, src_u8);
-      break;
-   /* ---------------------------------- */
-   case AX:
-      cpu_write_u16_at(c, addr, c->ax);
-      break;
-   case BX:
-      cpu_write_u16_at(c, addr, c->bx);
-      break;
-   case CX:
-      cpu_write_u16_at(c, addr, c->cx);
-      break;
-   case DX:
-      cpu_write_u16_at(c, addr, c->dx);
-      break;
-   /* ---------------------------------- */
-   case SI:
-      cpu_write_u16_at(c, addr, c->si);
-      break;
-   case DI:
-      cpu_write_u16_at(c, addr, c->di);
-      break;
-   case SP:
-      cpu_write_u16_at(c, addr, c->sp);
-      break;
-   case BP:
-      cpu_write_u16_at(c, addr, c->bp);
-      break;
-   case IP:
-      cpu_write_u16_at(c, addr, c->ip);
-      break;
-   /* ---------------------------------- */
-   case ES:
-      cpu_write_u16_at(c, addr, c->es);
-      break;
-   case CS:
-      cpu_write_u16_at(c, addr, c->cs);
-      break;
-   case SS:
-      cpu_write_u16_at(c, addr, c->ss);
-      break;
-   case DS:
-      cpu_write_u16_at(c, addr, c->ds);
-      break;
-   /* ---------------------------------- */
-   default : return; /* should never come here */
-   }
-}
-
-/* HANDLE ALL THE FLAG MODIFICATIONS !! */
-void inc_dec_r (cpu* c, reg r, i8 id) {
-   u16 change1, change2;
-   u32 old_val, new_val;
-   u8 bits;
-
-   change1 = (id == -1) ? -0x0001 : 0x0001;
-   change2 = (id == -1) ? -0x0100 : 0x0100;
-   bits = 16;
-
-   switch (r) {
-      case 0:
-         old_val = (u32)c->ax;
-         new_val = (u32)c->ax + (u32)change1;
-         c->ax = (c->ax & 0xff00) + (u8)(((c->ax & 0x00ff) + change1) & 0x00ff);
-         bits = 8;
-         break;
-      case 1:
-         old_val = c->ax;
-         new_val = (u32)c->ax + (u32)change2;
-         c->ax += change2;
-         break;
-      case 2:
-         old_val = c->ax;
-         new_val = (u32)c->ax + (u32)change1;
-         c->ax += change1;
-         break;
-
-      case 3:
-         old_val = c->bx;
-         new_val = (u32)c->bx + (u32)change1;
-         c->bx = (c->bx & 0xff00) + (u8)(((c->bx & 0x00ff) + change1) & 0x00ff);
-         bits = 8;
-         break;
-      case 4:
-         old_val = c->bx;
-         new_val = (u32)c->bx + (u32)change2;
-         c->bx += change2;
-         break;
-      case 5:
-         old_val = c->bx;
-         new_val = (u32)c->bx + (u32)change1;
-         c->bx += change1;
-         break;
-
-      case 6:
-         old_val = c->cx;
-         new_val = (u32)c->cx + (u32)change1;
-         c->cx = (c->cx & 0xff00) + (u8)(((c->cx & 0x00ff) + change1) & 0x00ff);
-         bits = 8;
-         break;
-      case 7:
-         old_val = c->cx;
-         new_val = (u32)c->cx + (u32)change2;
-         c->cx += change2;
-         break;
-      case 8:
-         old_val = c->cx;
-         new_val = (u32)c->cx + (u32)change1;
-         c->cx += change1;
-         break;
-
-      case 9:
-         old_val = c->dx;
-         new_val = (u32)c->dx + (u32)change1;
-         c->dx = (c->dx & 0xff00) + (u8)(((c->dx & 0x00ff) + change1) & 0x00ff);
-         bits = 8;
-         break;
-      case 10:
-         old_val = c->dx;
-         new_val = (u32)c->dx + (u32)change2;
-         c->dx += change2;
-         break;
-      case 11:
-         old_val = c->dx;
-         new_val = (u32)c->dx + (u32)change1;
-         c->dx += change1;
-         break;
-
-      case 12:
-         old_val = c->si;
-         new_val = (u32)c->si + (u32)change1;
-         c->si += change1;
-         break;
-      case 13:
-         old_val = c->di;
-         new_val = (u32)c->di + (u32)change1;
-         c->di += change1;
-         break;
-      case 14:
-         old_val = c->sp;
-         new_val = (u32)c->sp + (u32)change1;
-         c->sp += change1;
-         break;
-      case 15:
-         old_val = c->bp;
-         new_val = (u32)c->bp + (u32)change1;
-         c->bp += change1;
-         break;
-      default: break; /* should never come here */
-   }
-
-   /* set all the flags required flags */
-   if ((bits == 8 && (u8)new_val == 0) || (bits == 16 && (u16)new_val == 0)) setZF(c); else resetZF(c);
-   if (is_neg(new_val, bits)) setSF(c); else resetSF(c);
-   if (has_even_parity(new_val)) setPF(c); else resetPF(c);
-   if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
-}
-
-/* HANDLE ALL THE FLAG MODIFICATIONS !! */
-void inc_dec_m(cpu* c, u32 addr, u8 bw, i8 id) {
-   u8 mem8, change2;
-   u16 mem16, change1;
-   u32 old_val, new_val;
-   change1 = (id == -1) ? -0x0001 : 0x0001;
-   change2 = (id == -1) ? -0x01 : 0x01;
-   if (bw == 8) {
-      mem8 = cpu_read_u8_at(c, addr);
-      old_val = (u32)mem8;
-      new_val = (u32)mem8 + (u32)change2;
-      cpu_write_u8_at(c, addr, mem8 + change2);
-   } else {
-      mem16 = cpu_read_u16_at(c, addr);
-      old_val = mem16;
-      new_val = (u32)mem16 + (u32)change1;
-      cpu_write_u16_at(c, addr, mem16 + change1);
-   }
-
-   /* set all the flags required flags */
-   if ((bw == 8 && (u8)new_val == 0) || (bw == 16 && (u16)new_val == 0)) setZF(c); else resetZF(c);
-   if (is_neg(new_val, bw)) setSF(c); else resetSF(c);
-   if (has_even_parity(new_val)) setPF(c); else resetPF(c);
-   if ((u16)(new_val & 0x0f00) - (u16)(old_val & 0x0f00) != 0) setAF(c); else resetAF(c);
-}
-
 void push_r(cpu *c, reg r) {
    u16 val = get_reg16_val(c, r);
    if (c->sp > 1) c->sp -= 2; else return;
@@ -708,7 +346,7 @@ void cpu_setmem(cpu *c, u8 *mem) {
  * a single byte of information from memory.
  * It also processes the information present
  * in this byte if it an override (like a
- * segement override. It returns the byte
+ * segment override. It returns the byte
  * otherwise, which is just the opcode of
  * the next instruction.
  */
@@ -728,7 +366,7 @@ u8 cpu_fetch(cpu *c) {
    return byte; /* opcode */
 }
 
-/* execute an instruction based on the opcode recieved
+/* execute an instruction based on the opcode received
  *
  * cpu_exec() is in charge of reading as much
  * memory as required by the opcode it is

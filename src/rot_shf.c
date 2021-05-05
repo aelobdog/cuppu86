@@ -227,14 +227,27 @@ void shift_iright_r(cpu* c, reg r, int shift_amount, u8 memsize) {
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = get_reg8_val(c, r);
+
+      if (shift_amount > 0 && shift_amount < 8) {
+         if (BIT((shift_amount - 1), value.v8)) setCF(c);
+         else resetCF(c);
+      }
+      
       value.v8 = (value.v8) >> shift_amount;
       set_reg8(c, r, value.v8);
    } else {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = get_reg16_val(c, r);
+
+      if (shift_amount > 0 && shift_amount < 16) {
+         if (BIT((shift_amount - 1), value.v16)) setCF(c);
+         else resetCF(c);
+      }
+      
       value.v16 = (value.v16) >> shift_amount;
       set_reg16(c, r, value.v16);
    }
+   setOF(c);
 }
 
 void shift_iright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
@@ -242,14 +255,27 @@ void shift_iright_m(cpu* c, u32 addr, int shift_amount, u8 memsize) {
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v8 = cpu_read_u8_at(c, addr);
+
+      if (shift_amount > 0 && shift_amount < 8) {
+         if (BIT((shift_amount - 1), value.v8)) setCF(c);
+         else resetCF(c);
+      }
+      
       value.v8 = (value.v8) >> shift_amount;
       cpu_write_u8_at(c, addr, value.v8);
    } else {
       value.v16 = 0; /* just to ensure that there is no data corruption */
       value.v16 = cpu_read_u16_at(c, addr);
+
+      if (shift_amount > 0 && shift_amount < 16) {
+         if (BIT((shift_amount - 1), value.v16)) setCF(c);
+         else resetCF(c);
+      }
+      
       value.v16 = (value.v16) >> shift_amount;
       cpu_write_u16_at(c, addr, value.v16);
    }
+   setOF(c);
 }
 
 u8 rotate8(u8 val, u8 rby, i8 rl) {
