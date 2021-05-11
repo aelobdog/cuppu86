@@ -64,3 +64,8 @@ u8 has_even_parity(u8 num) {
    if (num & 1) return 0;
    return 1;
 }
+
+void invertCF(cpu* c) {
+   if(getCF(c)) resetCF(c);
+   else setCF(c);
+}

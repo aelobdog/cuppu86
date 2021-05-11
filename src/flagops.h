@@ -39,4 +39,7 @@ void resetOF(cpu* c);
 u8 is_neg(u16 num, u8 bits);
 u8 has_even_parity(u8 num);
 
+/* extra functions for some 8086 instructions */
+void invertCF(cpu* c);
+
 #endif

@@ -268,6 +268,35 @@ void pop_r(cpu *c, reg r) {
    mov_rm(c, r, base_offset(c->ss, c->sp - 2));
 }
 
+void sahf(cpu* c) {
+   c->flags &= 0xff00;
+   c->flags += get_reg8_val(c, AH);
+}
+
+void lahf(cpu* c) {
+   set_reg8(c, AH, (u8)(c->flags & 0x00ff));
+}
+
+void xchg_ax(cpu *c, reg r) {
+   u16 temp;
+   temp = get_reg16_val(c, r);
+   set_reg16(c, r, c->ax);
+   c->ax = temp;
+}
+
+void aad(cpu *c) {
+   u8 value;
+   set_reg8(
+      c, AL,
+      (u8)((10 * get_reg8_val(c, AH)) + get_reg8_val(c, AL))
+   );
+   set_reg8(c, AH, 0x00);
+   value = get_reg8_val(c, AL);
+   if(value == 0) setZF(c);
+   if(is_neg(value, 8)) setSF(c); else resetSF(c);
+   if(has_even_parity(value)) setPF(c); else resetPF(c);
+}
+
 u32 base_offset(u16 base, u16 offset) {
    u32 final_addr;
    final_addr = base;
@@ -315,7 +344,8 @@ void cpu_init (cpu *c) {
    c->bp = 0;
    c->si = 0;
    c->di = 0;
-
+   c->flags = 0;
+   c->halted = 0;
    cpu_init_segments(c);
 }
 
@@ -366,18 +396,18 @@ u8 cpu_fetch(cpu *c) {
    return byte; /* opcode */
 }
 
-/* execute an instruction based on the opcode received
- *
- * cpu_exec() is in charge of reading as much
- * memory as required by the opcode it is
- * given.
- */
 void cpu_exec(cpu *c, u8 opcode) {
    u8 other_reg, mod, next, m_rm, rg;
    u16 offset, src_val;
    u32 addr, src_addr;
 
    switch (opcode) {
+      case 0xd5: 
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+         if(next == 0x0a) aad(c);
+         break;
+
       /* 8 bit immediate value */
       case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb1: mov_r8i(c, CL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
@@ -458,8 +488,6 @@ void cpu_exec(cpu *c, u8 opcode) {
          );
       break;
 
-
-      /* reg8/mem8 <- reg8 */
       case 0x88:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);
 
@@ -483,9 +511,8 @@ void cpu_exec(cpu *c, u8 opcode) {
                rg
             );
          }
-      break; /* 0x88 */
+      break;
 
-      /* reg16/mem16 <- reg16 */
       case 0x89:
          extract_rg_mrm(c, &next, &rg, &m_rm, 16);
 
@@ -509,7 +536,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                rg
             );
          }
-      break; /* 0x89 */
+      break;
 
       case 0x8a:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);
@@ -555,7 +582,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                )
             );
          }
-     break;
+      break;
 
       case 0x8c:
          extract_rg_mrm(c, &next, &rg, &m_rm, 0);
@@ -785,32 +812,65 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0x4E: inc_dec_r(c, SI, -1); break;
       case 0x4F: inc_dec_r(c, DI, -1); break;
 
-      case 0x50: push_r(c, AX); break;
-      case 0x51: push_r(c, DX); break;
-      case 0x52: push_r(c, CX); break;
-      case 0x53: push_r(c, BX); break;
-      case 0x54: push_r(c, SP); break;
-      case 0x55: push_r(c, BP); break;
-      case 0x56: push_r(c, SI); break;
-      case 0x57: push_r(c, DI); break;
+      case 0x50: push_r(c, AX);  break;
+      case 0x51: push_r(c, DX);  break;
+      case 0x52: push_r(c, CX);  break;
+      case 0x53: push_r(c, BX);  break;
+      case 0x54: push_r(c, SP);  break;
+      case 0x55: push_r(c, BP);  break;
+      case 0x56: push_r(c, SI);  break;
+      case 0x57: push_r(c, DI);  break;
       case 0x9c: push_r(c, FLG); break;
-      case 0x06: push_r(c, ES); break;
-      case 0x0e: push_r(c, CS); break;
-      case 0x16: push_r(c, SS); break;
-      case 0x1e: push_r(c, DS); break;
+      case 0x06: push_r(c, ES);  break;
+      case 0x0e: push_r(c, CS);  break;
+      case 0x16: push_r(c, SS);  break;
+      case 0x1e: push_r(c, DS);  break;
 
-      case 0x58: pop_r(c, AX); break;
-      case 0x59: pop_r(c, DX); break;
-      case 0x5A: pop_r(c, CX); break;
-      case 0x5B: pop_r(c, BX); break;
-      case 0x5C: pop_r(c, SP); break;
-      case 0x5D: pop_r(c, BP); break;
-      case 0x5E: pop_r(c, SI); break;
-      case 0x5F: pop_r(c, DI); break;
+      case 0x58: pop_r(c, AX);  break;
+      case 0x59: pop_r(c, DX);  break;
+      case 0x5A: pop_r(c, CX);  break;
+      case 0x5B: pop_r(c, BX);  break;
+      case 0x5C: pop_r(c, SP);  break;
+      case 0x5D: pop_r(c, BP);  break;
+      case 0x5E: pop_r(c, SI);  break;
+      case 0x5F: pop_r(c, DI);  break;
       case 0x9d: pop_r(c, FLG); break;
-      case 0x07: pop_r(c, ES); break;
-      case 0x17: pop_r(c, SS); break;
-      case 0x1f: pop_r(c, DS); break;
+      case 0x07: pop_r(c, ES);  break;
+      case 0x17: pop_r(c, SS);  break;
+      case 0x1f: pop_r(c, DS);  break;
+
+      case 0x91: xchg_ax(c, CX); break;
+      case 0x92: xchg_ax(c, DX); break;
+      case 0x93: xchg_ax(c, BX); break;
+      case 0x94: xchg_ax(c, SP); break;
+      case 0x95: xchg_ax(c, BP); break;
+      case 0x96: xchg_ax(c, SI); break;
+      case 0x97: xchg_ax(c, DI); break;
+      case 0x98: 
+         if(BIT(7, c->ax)) set_reg8(c, AH, 0xff);
+         else set_reg8(c, AH, 0x00);
+         break;
+      case 0x99:
+         if(BIT(15, c->ax)) c->dx = 0xffff;
+         else c->dx = 0x0000;
+         break;
+      case 0x9e: sahf(c);        break;
+      case 0x9f: lahf(c);        break;
+      case 0xf4: c->halted = 1;  break;
+      case 0xf5: invertCF(c);    break;
+      case 0xf8: resetCF(c);     break;
+      case 0xf9: setCF(c);       break;
+      case 0xfa: resetIF(c);     break;
+      case 0xfb: setIF(c);       break;
+      case 0xfc: resetDF(c);     break;
+      case 0xfd: setDF(c);       break;
+
+      case 0xa4: movs(c, 8);  break;
+      case 0xa5: movs(c, 16); break;
+      case 0xaa: stos(c, 8);  break;
+      case 0xab: stos(c, 16); break;
+      case 0xac: lods(c, 8);  break;
+      case 0xad: lods(c, 16); break;
 
       case 0xd0:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);

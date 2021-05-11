@@ -1,4 +1,6 @@
 #include "move.h"
+#include "types.h"
+#include "flagops.h"
 
 void mov_r16i(cpu *c, reg r, u16 val) {
    switch (r) {
@@ -228,4 +230,75 @@ void mov_mr(cpu* c, u32 addr, reg src) {
    }
 }
 
+void stos(cpu *c, u8 memsize) {
+   u8 update;
+   update = 0;
+   if(memsize == 8) {
+      cpu_write_u8_at(
+         c, 
+         base_offset(c->es, c->di), 
+         get_reg8_val(c, AL)
+      );
+      update = 1;
+   } else {
+      cpu_write_u16_at(
+         c, 
+         base_offset(c->es, c->di), 
+         get_reg16_val(c, AX)
+      );
+      update = 2;
+   }
 
+   if(getDF(c)) c->di -= update;
+   else c->di += update;
+}
+
+void lods(cpu *c, u8 memsize) {
+   u8 update;
+   update = 0;
+   if(memsize == 8) {
+      set_reg8(
+         c, AL, 
+         cpu_read_u8_at(c, base_offset(c->ds, c->si))
+      );
+      update = 1;
+   } else {
+      set_reg16(
+         c, AX, 
+         cpu_read_u16_at(c, base_offset(c->ds, c->si))
+      );
+      update = 2;
+   }
+
+   if(getDF(c)) c->si -= update;
+   else c->si += update;
+}
+
+void movs(cpu *c, u8 memsize) {
+   u8 update;
+   update = 0;
+   if(memsize == 8) {
+      cpu_write_u8_at(
+         c, 
+         base_offset(c->es, c->di),
+         cpu_read_u8_at(c, base_offset(c->ds, c->si))
+      );
+      update = 1;
+   } else {
+      cpu_write_u16_at(
+         c, 
+         base_offset(c->es, c->di),
+         cpu_read_u16_at(c, base_offset(c->ds, c->si))
+      );
+      update = 2;
+   }
+
+   if(getDF(c)) {
+      c->si -= update; 
+      c->di -= update; 
+   }
+   else {
+      c->si += update;
+      c->di += update;
+   }
+}

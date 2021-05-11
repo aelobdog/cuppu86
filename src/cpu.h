@@ -28,6 +28,7 @@ typedef struct cpu {
    u16 ss; /* stack segment */
    u16 es; /* extra segment */
    u16 flags;
+   u8  halted;
    u8* mem; /* main memory */
 } cpu;
 
@@ -65,5 +66,9 @@ u32 get_mrm_loc(cpu *c, u8 mrm, u16 base_segment, u16 offset);
 
 void push_r(cpu *c, reg r);
 void pop_r(cpu *c, reg r);
+void exchange(cpu* c, reg r);
+void sahf(cpu* c);
+void lahf(cpu* c);
+void aad(cpu* c);
 
 #endif
