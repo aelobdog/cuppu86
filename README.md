@@ -1,4 +1,4 @@
-<p align="center"><img src="./logo.svg" alt="Cuppu86"/></p>
+<p align="center"><img src="./docs/logo.svg" alt="Cuppu86"/></p>
 
 # Cuppu
 
