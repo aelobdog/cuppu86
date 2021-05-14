@@ -34,6 +34,7 @@ typedef struct cpu {
 
 /* cpu procs */
 void cpu_init(cpu* c);
+cpu* cpu_make();
 void cpu_init_segments(cpu *c);
 void cpu_set_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem(cpu* c, u8* mem); 

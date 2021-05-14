@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "cpu.h"
 #include "types.h"
 #include "flagops.h"
@@ -347,6 +348,10 @@ void cpu_init (cpu *c) {
    c->flags = 0;
    c->halted = 0;
    cpu_init_segments(c);
+}
+
+cpu* cpu_make () {
+   return (cpu*)malloc(sizeof(cpu));
 }
 
 /* set segments with custom values */
