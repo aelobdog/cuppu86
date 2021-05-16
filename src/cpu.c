@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cpu.h"
+#include "move.h"
 #include "types.h"
-#include "flagops.h"
 #include "memory.h"
+#include "flagops.h"
 #include "rot_shf.h"
 #include "inc_dec.h"
-#include "move.h"
+#include "adjusts.h"
 
 /* MOD and R/M are treated as a combined entity.
  * For move instruction :
@@ -285,19 +286,6 @@ void xchg_ax(cpu *c, reg r) {
    c->ax = temp;
 }
 
-void aad(cpu *c) {
-   u8 value;
-   set_reg8(
-      c, AL,
-      (u8)((10 * get_reg8_val(c, AH)) + get_reg8_val(c, AL))
-   );
-   set_reg8(c, AH, 0x00);
-   value = get_reg8_val(c, AL);
-   if(value == 0) setZF(c);
-   if(is_neg(value, 8)) setSF(c); else resetSF(c);
-   if(has_even_parity(value)) setPF(c); else resetPF(c);
-}
-
 u32 base_offset(u16 base, u16 offset) {
    u32 final_addr;
    final_addr = base;
@@ -407,11 +395,17 @@ void cpu_exec(cpu *c, u8 opcode) {
    u32 addr, src_addr;
 
    switch (opcode) {
+      case 0xd4:
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+         if(next == 0x0a) aam(c);
+      break;
+
       case 0xd5: 
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
          if(next == 0x0a) aad(c);
-         break;
+      break;
 
       /* 8 bit immediate value */
       case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
@@ -672,7 +666,7 @@ void cpu_exec(cpu *c, u8 opcode) {
             else if (rg == 1) inc_dec_m(c, src_addr, 8, -1);
          }
 
-         break;
+      break;
 
       case 0xff:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
@@ -876,6 +870,10 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xab: stos(c, 16); break;
       case 0xac: lods(c, 8);  break;
       case 0xad: lods(c, 16); break;
+      case 0x27: daa(c); break;
+      case 0x2f: das(c); break;
+      case 0x37: aaa(c); break;
+      case 0x3f: aas(c); break;
 
       case 0xd0:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);

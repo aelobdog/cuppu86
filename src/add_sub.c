@@ -25,6 +25,12 @@ u8 add8 (cpu* c, u8 op1, u8 op2, u8 includeCarry) {
    if(sum == 0) setZF(c); else resetZF(c);
    if(is_neg(sum, 8)) setSF(c); else resetSF(c);
    if(has_even_parity(sum)) setPF(c); else resetPF(c);
+
+   if(BIT(7, op1) == 0 && BIT(7, op2) == 0 && BIT(7, sum) == 1)
+      setOF(c);
+   else if (BIT(7, op1) == 1 && BIT(7, op2) == 1 && BIT(7, sum) == 0)
+      setOF(c);
+   else resetOF(c);
    
    return sum;
 }
@@ -55,6 +61,12 @@ u16 add16 (cpu* c, u16 op1, u16 op2, u8 includeCarry) {
    if(is_neg(sum, 16)) setSF(c); else resetSF(c);
    if(has_even_parity((u8)(sum & 0x00ff))) setPF(c); else resetPF(c);
 
+   if(BIT(15, op1) == 0 && BIT(15, op2) == 0 && BIT(15, sum) == 1)
+      setOF(c);
+   else if (BIT(15, op1) == 1 && BIT(15, op2) == 1 && BIT(15, sum) == 0)
+      setOF(c);
+   else resetOF(c);
+
    return sum;
 }
 
@@ -74,7 +86,13 @@ u8 sub8(cpu *c, u8 op1, u8 op2, u8 includeCarry) {
    if(diff == 0) setZF(c); else resetZF(c);
    if(is_neg(diff, 8)) setSF(c); else resetSF(c);
    if(has_even_parity(diff)) setPF(c); else resetPF(c);
-   
+
+   if(BIT(7, op1) == 0 && BIT(7, op2) == 1 && BIT(7, diff) == 1)
+      setOF(c);
+   else if (BIT(7, op1) == 1 && BIT(7, op2) == 0 && BIT(7, diff) == 0)
+      setOF(c);
+   else resetOF(c);
+
    return diff;
 }
 
@@ -95,5 +113,36 @@ u16 sub16(cpu *c, u16 op1, u16 op2, u8 includeCarry) {
    if(is_neg(diff, 16)) setSF(c); else resetSF(c);
    if(has_even_parity((u8)(diff & 0x00ff))) setPF(c); else resetPF(c);
    
+   if(BIT(15, op1) == 0 && BIT(15, op2) == 1 && BIT(15, diff) == 1)
+      setOF(c);
+   else if (BIT(15, op1) == 1 && BIT(15, op2) == 0 && BIT(15, diff) == 0)
+      setOF(c);
+   else resetOF(c);
+
    return diff;
+}
+
+void cmps(cpu *c, u8 memsize) {
+   u8 update;
+   update = 0;
+   if(memsize == 8) {
+      sub8(
+         c,
+         cpu_read_u8_at(c, base_offset(c->ds, c->si)), 
+         cpu_read_u8_at(c, base_offset(c->es, c->di)),
+         0
+      );
+      update = 1;
+   } else {
+      sub16(
+         c,
+         cpu_read_u16_at(c, base_offset(c->ds, c->si)), 
+         cpu_read_u16_at(c, base_offset(c->es, c->di)),
+         0
+      );
+      update = 2;
+   }
+
+   if(getDF(c)) c->si -= update;
+   else c->si += update;
 }

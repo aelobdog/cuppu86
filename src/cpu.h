@@ -70,6 +70,5 @@ void pop_r(cpu *c, reg r);
 void exchange(cpu* c, reg r);
 void sahf(cpu* c);
 void lahf(cpu* c);
-void aad(cpu* c);
 
 #endif
