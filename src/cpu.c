@@ -8,6 +8,8 @@
 #include "rot_shf.h"
 #include "inc_dec.h"
 #include "adjusts.h"
+#include "add_sub.h"
+#include "binops.h"
 
 /* MOD and R/M are treated as a combined entity.
  * For move instruction :
@@ -191,7 +193,7 @@ u8 get_sreg16(u8 regnum) {
    return 255; /* should never happen */
 }
 
-void extract_rg_mrm (cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype) {
+void extract_rg_mrm(cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype) {
    *next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
    (c->ip)++;
    *rg  = REG(*next);
@@ -284,6 +286,20 @@ void xchg_ax(cpu *c, reg r) {
    temp = get_reg16_val(c, r);
    set_reg16(c, r, c->ax);
    c->ax = temp;
+}
+
+u8 xchg8(cpu *c, reg r, u8 val) {
+   u8 regval;
+   regval = get_reg8_val(c, r);
+   set_reg8(c, r, val);
+   return regval;
+}
+
+u16 xchg16(cpu *c, reg r, u16 val) {
+   u16 regval;
+   regval = get_reg16_val(c, r);
+   set_reg16(c, r, val);
+   return regval;
 }
 
 u32 base_offset(u16 base, u16 offset) {
@@ -395,6 +411,894 @@ void cpu_exec(cpu *c, u8 opcode) {
    u32 addr, src_addr;
 
    switch (opcode) {
+      case 0x00:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = add8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 0);
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 0);
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x01:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = add16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 0);
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 0);
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x02:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = add8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 0);
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 0);
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x03:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = add16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 0);
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 0);
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x04:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, add8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr), 0));
+         (c->ip)++;
+      break;
+
+      case 0x05:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, add16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr), 0));
+         (c->ip)+=2;
+      break;
+
+      case 0x08:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = or8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = or8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x09:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = or16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = or16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x0a:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = or8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = or8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x0b:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = or16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = or16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x0c:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, or8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr)));
+         (c->ip)++;
+      break;
+
+      case 0x0d:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, or16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr)));
+         (c->ip)+=2;
+      break;
+
+      case 0x10:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = add8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 1);
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 1);
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x11:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = add16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 1);
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 1);
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x12:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = add8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 1);
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 1);
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x13:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = add16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 1);
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = add16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 1);
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x14:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, add8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr), 1));
+         (c->ip)++;
+      break;
+
+      case 0x15:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, add16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr), 1));
+         (c->ip)+=2;
+      break;
+
+      case 0x18:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 1);
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, cpu_read_u8_at(c, addr), get_reg8_val(c, rg), 1);
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x19:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 1);
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, cpu_read_u16_at(c, addr), get_reg16_val(c, rg), 1);
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x1a:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, rg), get_reg8_val(c, other_reg), 1);
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 1);
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x1b:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, rg), get_reg16_val(c, other_reg), 1);
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 1);
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x1c:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, sub8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr), 1));
+         (c->ip)++;
+      break;
+
+      case 0x1d:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, sub16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr), 1));
+         (c->ip)+=2;
+      break;
+
+      case 0x20:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = and8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = and8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x21:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = and16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = and16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x22:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = and8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = and8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x23:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = and16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = and16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x24:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, and8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr)));
+         (c->ip)++;
+      break;
+
+      case 0x25:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, and16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr)));
+         (c->ip)+=2;
+      break;
+
+      case 0x28:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 0);
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, cpu_read_u8_at(c, addr), get_reg8_val(c, rg), 0);
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x29:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 0);
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, cpu_read_u16_at(c, addr), get_reg16_val(c, rg), 0);
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x2a:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, rg), get_reg8_val(c, other_reg), 0);
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 0);
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x2b:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, rg), get_reg16_val(c, other_reg), 0);
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 0);
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x2c:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, sub8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr), 0));
+         (c->ip)++;
+      break;
+
+      case 0x2d:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, sub16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr), 0));
+         (c->ip)+=2;
+      break;
+
+      case 0x30:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = xor8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, other_reg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = xor8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            cpu_write_u8_at(c, addr, sum);
+         }
+      break;
+
+      case 0x31:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = xor16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, other_reg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = xor16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            cpu_write_u16_at(c, addr, sum);
+         }
+      break;
+
+      case 0x32:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = xor8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+            set_reg8(c, rg, sum);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = xor8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+            set_reg8(c, rg, sum);
+         }
+      break;
+
+      case 0x33:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = xor16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+            set_reg16(c, rg, sum);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = xor16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
+            set_reg16(c, rg, sum);
+         }
+      break;
+
+      case 0x34:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, xor8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr)));
+         (c->ip)++;
+      break;
+
+      case 0x35:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, xor16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr)));
+         (c->ip)+=2;
+      break;
+
+      case 0x38:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg), 0);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, cpu_read_u8_at(c, addr), get_reg8_val(c, rg), 0);
+         }
+      break;
+
+      case 0x39:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg), 0);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, cpu_read_u16_at(c, addr), get_reg16_val(c, rg), 0);
+         }
+      break;
+
+      case 0x3a:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            u8 sum;
+            other_reg = get_reg8(R_M(next));
+            sum = sub8(c, get_reg8_val(c, rg), get_reg8_val(c, other_reg), 0);
+         } else {
+            u8 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr), 0);
+         }
+      break;
+
+      case 0x3b:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            u16 sum;
+            other_reg = get_reg16(R_M(next));
+            sum = sub16(c, get_reg16_val(c, rg), get_reg16_val(c, other_reg), 0);
+         } else {
+            u16 sum;
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+
+            sum = sub16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr), 0);
+         }
+      break;
+
+      case 0x3c:
+         addr = base_offset(c->cs, c->ip);
+         sub8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr), 0);
+         (c->ip)++;
+      break;
+
+      case 0x3d:
+         addr = base_offset(c->cs, c->ip);
+         sub16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr), 0);
+         (c->ip)+=2;
+      break;
+
       case 0xd4:
          next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
          (c->ip)++;
@@ -407,7 +1311,6 @@ void cpu_exec(cpu *c, u8 opcode) {
          if(next == 0x0a) aad(c);
       break;
 
-      /* 8 bit immediate value */
       case 0xb0: mov_r8i(c, AL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb1: mov_r8i(c, CL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb2: mov_r8i(c, DL, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
@@ -417,7 +1320,6 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xb6: mov_r8i(c, DH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xb7: mov_r8i(c, BH, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
 
-      /* 16 bit immediate value */
       case 0xb8: mov_r16i(c, AX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
       case 0xb9: mov_r16i(c, CX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
       case 0xba: mov_r16i(c, DX, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
@@ -496,7 +1398,6 @@ void cpu_exec(cpu *c, u8 opcode) {
          } else {
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-            /* perform move operation from register to memory */
             mov_mr(
                c,
                get_mrm_loc(
@@ -665,7 +1566,6 @@ void cpu_exec(cpu *c, u8 opcode) {
             if (rg == 0) inc_dec_m(c, src_addr, 8, 1);
             else if (rg == 1) inc_dec_m(c, src_addr, 8, -1);
          }
-
       break;
 
       case 0xff:
@@ -845,14 +1745,17 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0x95: xchg_ax(c, BP); break;
       case 0x96: xchg_ax(c, SI); break;
       case 0x97: xchg_ax(c, DI); break;
+
       case 0x98: 
          if(BIT(7, c->ax)) set_reg8(c, AH, 0xff);
          else set_reg8(c, AH, 0x00);
-         break;
+      break;
+
       case 0x99:
          if(BIT(15, c->ax)) c->dx = 0xffff;
          else c->dx = 0x0000;
-         break;
+      break;
+      
       case 0x9e: sahf(c);        break;
       case 0x9f: lahf(c);        break;
       case 0xf4: c->halted = 1;  break;
@@ -866,6 +1769,8 @@ void cpu_exec(cpu *c, u8 opcode) {
 
       case 0xa4: movs(c, 8);  break;
       case 0xa5: movs(c, 16); break;
+      case 0xa6: cmps(c, 8);  break;
+      case 0xa7: cmps(c, 16); break;
       case 0xaa: stos(c, 8);  break;
       case 0xab: stos(c, 16); break;
       case 0xac: lods(c, 8);  break;
@@ -1078,7 +1983,7 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 6: break; /* unused  */
          case 7: break; /* sar 8 1 */
          }
-         break;
+      break;
      
       case 0xd3:
          extract_rg_mrm(c, &next, &rg, &m_rm, 16);
@@ -1116,14 +2021,375 @@ void cpu_exec(cpu *c, u8 opcode) {
          case 6: break; /* unused  */
          case 7: break; /* sar 8 1 */
          }
-         break;
+      break;
+
+      case 0x80:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            addr = base_offset(c->cs, c->ip);
+            switch(rg) {
+               case 0:
+                  set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 1: 
+                  set_reg8(c, other_reg, or8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr)));
+                  break;
+               case 2:
+                  set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 3: 
+                  set_reg8(c, other_reg, sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 4: 
+                  set_reg8(c, other_reg, and8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr)));
+                  break;
+               case 5: 
+                  set_reg8(c, other_reg, sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 6: 
+                  set_reg8(c, other_reg, xor8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr)));
+                  break;
+               case 7: 
+                  sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0);
+                  break;
+            }
+            (c->ip)++;
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = base_offset(c->cs, c->ip);
+            src_addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            switch(rg) {
+               case 0: 
+                  cpu_write_u8_at(c, src_addr, 
+                        add8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 1: 
+                  cpu_write_u8_at(c, src_addr, 
+                        or8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr)));
+                  break;
+               case 2: 
+                  cpu_write_u8_at(c, src_addr, 
+                        add8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 3:
+                  cpu_write_u8_at(c, src_addr, 
+                        sub8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 4: 
+                  cpu_write_u8_at(c, src_addr, 
+                        and8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr)));
+                  break;
+               case 5: 
+                  cpu_write_u8_at(c, src_addr, 
+                        sub8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 6: 
+                  cpu_write_u8_at(c, src_addr, 
+                        xor8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr)));
+                  break;
+               case 7: 
+                  sub8(c, cpu_read_u8_at(c, src_addr), 
+                       cpu_read_u8_at(c, addr), 0);
+                  break;
+            }
+            (c->ip)++;
+         }
+      break;
+
+      case 0x81:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            addr = base_offset(c->cs, c->ip);
+            switch(rg) {
+               case 0:
+                  set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 0));
+                  break;
+               case 1: 
+                  set_reg16(c, other_reg, or16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr)));
+                  break;
+               case 2:
+                  set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 1));
+                  break;
+               case 3: 
+                  set_reg16(c, other_reg, sub16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 1));
+                  break;
+               case 4: 
+                  set_reg16(c, other_reg, and16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr)));
+                  break;
+               case 5: 
+                  set_reg16(c, other_reg, sub16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 0));
+                  break;
+               case 6: 
+                  set_reg16(c, other_reg, xor16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr)));
+                  break;
+               case 7: 
+                  sub16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 0);
+                  break;
+            }
+            (c->ip)+=2;
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = base_offset(c->cs, c->ip);
+            src_addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            switch(rg) {
+               case 0: 
+                  cpu_write_u16_at(c, src_addr, 
+                        add16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr), 0));
+                  break;
+               case 1: 
+                  cpu_write_u16_at(c, src_addr, 
+                        or16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr)));
+                  break;
+               case 2: 
+                  cpu_write_u16_at(c, src_addr, 
+                        add16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr), 1));
+                  break;
+               case 3:
+                  cpu_write_u16_at(c, src_addr, 
+                        sub16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr), 1));
+                  break;
+               case 4: 
+                  cpu_write_u16_at(c, src_addr, 
+                        and16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr)));
+                  break;
+               case 5: 
+                  cpu_write_u16_at(c, src_addr, 
+                        sub16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr), 0));
+                  break;
+               case 6: 
+                  cpu_write_u16_at(c, src_addr, 
+                        xor16(c, cpu_read_u16_at(c, src_addr), 
+                                cpu_read_u16_at(c, addr)));
+                  break;
+               case 7: 
+                  sub16(c, cpu_read_u16_at(c, src_addr), 
+                       cpu_read_u16_at(c, addr), 0);
+                  break;
+            }
+            (c->ip)+=2;
+         }
+      break;
+
+      case 0x82:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            addr = base_offset(c->cs, c->ip);
+            switch(rg) {
+               case 0:
+                  set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 2:
+                  set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 3: 
+                  set_reg8(c, other_reg, sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 5: 
+                  set_reg8(c, other_reg, sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 7: 
+                  sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0);
+                  break;
+               default: (c->ip)--; // Just to counter the ip++ that happens after the if.
+            }
+            (c->ip)++;
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = base_offset(c->cs, c->ip);
+            src_addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            switch(rg) {
+               case 0: 
+                  cpu_write_u8_at(c, src_addr, 
+                        add8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 2: 
+                  cpu_write_u8_at(c, src_addr, 
+                        add8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 3:
+                  cpu_write_u8_at(c, src_addr, 
+                        sub8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 1));
+                  break;
+               case 5: 
+                  cpu_write_u8_at(c, src_addr, 
+                        sub8(c, cpu_read_u8_at(c, src_addr), 
+                                cpu_read_u8_at(c, addr), 0));
+                  break;
+               case 7: 
+                  sub8(c, cpu_read_u8_at(c, src_addr), 
+                       cpu_read_u8_at(c, addr), 0);
+                  break;
+               default: (c->ip)--; // Just to counter the ip++ that happens after the if
+            }
+            (c->ip)++;
+         }
+      break;
+
+      case 0x83:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            addr = base_offset(c->cs, c->ip);
+            switch(rg) {
+               case 0:
+                  set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 0));
+                  break;
+               case 2:
+                  set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 1));
+                  break;
+               case 3: 
+                  set_reg16(c, other_reg, sub16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 1));
+                  break;
+               case 5: 
+                  set_reg16(c, other_reg, sub16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 0));
+                  break;
+               case 7: 
+                  sub16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 0);
+                  break;
+            }
+            (c->ip)+=1;
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = base_offset(c->cs, c->ip);
+            src_addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            switch(rg) {
+               case 0: 
+                  cpu_write_u16_at(c, src_addr, 
+                        add16(c, cpu_read_u16_at(c, src_addr), 
+                                (u16)(cpu_read_u8_at(c, addr)), 0));
+                  break;
+               case 2: 
+                  cpu_write_u16_at(c, src_addr, 
+                        add16(c, cpu_read_u16_at(c, src_addr), 
+                                (u16)(cpu_read_u8_at(c, addr)), 1));
+                  break;
+               case 3:
+                  cpu_write_u16_at(c, src_addr, 
+                        sub16(c, cpu_read_u16_at(c, src_addr), 
+                                (u16)(cpu_read_u8_at(c, addr)), 1));
+                  break;
+               case 5: 
+                  cpu_write_u16_at(c, src_addr, 
+                        sub16(c, cpu_read_u16_at(c, src_addr), 
+                                (u16)(cpu_read_u8_at(c, addr)), 0));
+                  break;
+               case 7: 
+                  sub16(c, cpu_read_u16_at(c, src_addr), 
+                       (u16)(cpu_read_u8_at(c, addr)), 0);
+                  break;
+            }
+            (c->ip)+=1;
+         }
+      break;
+
+      case 0x86:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            set_reg8(
+               c, 
+               other_reg, 
+               xchg8(c, rg, get_reg8_val(c, other_reg)));
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+                c,
+                m_rm,
+                (segment_override != 0)
+                ?  get_base_override(c, segment_override)
+                :  get_base_from_mrm(c, m_rm),
+                offset
+            );
+            cpu_write_u8_at(
+               c,
+               addr, 
+               xchg8(c, rg, cpu_read_u8_at(c, addr)));
+         }
+      break;
+
+      case 0x87:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            set_reg16(
+               c, 
+               other_reg, 
+               xchg16(c, rg, get_reg16_val(c, other_reg)));
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+                c,
+                m_rm,
+                (segment_override != 0)
+                ?  get_base_override(c, segment_override)
+                :  get_base_from_mrm(c, m_rm),
+                offset
+            );
+            cpu_write_u16_at(
+               c,
+               addr, 
+               xchg16(c, rg, cpu_read_u16_at(c, addr)));
+         }
+      break;
 
       default: break; /* nops and unused */
    }
    /* setting the segment override to 0 after executing every instruction */
    segment_override = 0;
 }
-
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {
@@ -1140,6 +2406,7 @@ void cpu_dump(cpu *c) {
    printf(  "DS: %4x H\n",   c->ds);
    printf(  "ES: %4x H\n",   c->es);
    printf(  "SS: %4x H\n", c->ss);
+   printf(  "----------\n"        );
    printf(  "FL: %4x H\n\n", c->flags);
 }
 

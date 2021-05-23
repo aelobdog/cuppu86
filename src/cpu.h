@@ -33,8 +33,8 @@ typedef struct cpu {
 } cpu;
 
 /* cpu procs */
-void cpu_init(cpu* c);
 cpu* cpu_make();
+void cpu_init(cpu* c);
 void cpu_init_segments(cpu *c);
 void cpu_set_segments(cpu *c, u16 cs, u16 ds, u16 ss, u16 es);
 void cpu_setmem(cpu* c, u8* mem); 
@@ -67,7 +67,9 @@ u32 get_mrm_loc(cpu *c, u8 mrm, u16 base_segment, u16 offset);
 
 void push_r(cpu *c, reg r);
 void pop_r(cpu *c, reg r);
-void exchange(cpu* c, reg r);
+void xchg_ax(cpu* c, reg r);
+u8   xchg8 (cpu *c, reg r, u8  val);
+u16  xchg16(cpu *c, reg r, u16 val);
 void sahf(cpu* c);
 void lahf(cpu* c);
 
