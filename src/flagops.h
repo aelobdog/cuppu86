@@ -1,7 +1,6 @@
 #ifndef FLAGOPS_H
 #define FLAGOPS_H
 
-#include "cpu.h"
 #include "types.h"
 
 /* functions to write and read cpu flags */

@@ -1,5 +1,6 @@
 #include "adjusts.h"
 #include "add_sub.h"
+#include "flagops.h"
 
 #define LOWNIB(x) ((u8)(x & 0x0f))
 

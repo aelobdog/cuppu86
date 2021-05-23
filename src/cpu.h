@@ -10,27 +10,14 @@
 
 #include "types.h"
 #include "cpu_extra.h"
-
-/* cpu */
-typedef struct cpu {
-   /* registers */
-   u16 ax; /* accumulator   */
-   u16 bx; /* base index    */
-   u16 cx; /* count         */
-   u16 dx; /* data          */
-   u16 sp; /* stack pointer */
-   u16 ip; /* instr pointer */
-   u16 bp; /* base pointer  */
-   u16 si; /* source index  */
-   u16 di; /* destn index   */
-   u16 cs; /* code segment  */
-   u16 ds; /* data segment  */
-   u16 ss; /* stack segment */
-   u16 es; /* extra segment */
-   u16 flags;
-   u8  halted;
-   u8* mem; /* main memory */
-} cpu;
+#include "memory.h"
+#include "add_sub.h"
+#include "rot_shf.h"
+#include "binops.h"
+#include "adjusts.h"
+#include "inc_dec.h"
+#include "flagops.h"
+#include "move.h"
 
 /* cpu procs */
 cpu* cpu_make();

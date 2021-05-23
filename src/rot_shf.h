@@ -1,7 +1,6 @@
 #ifndef ROT_SHF_H
 #define ROT_SHF_H
 
-#include "cpu.h"
 #include "types.h"
 #include "cpu_extra.h"
 

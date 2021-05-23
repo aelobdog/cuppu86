@@ -438,9 +438,11 @@ u8 rot_tc_one_8(cpu* c, u8 val, i8 rl) {
 }
 
 u8 rot_tc_8(cpu* c, u8 val, int rotate_amount, i8 rl) {
-   for (int i = 0; i < rotate_amount; i++) {
+   int i;
+   for (i = 0; i < rotate_amount; i++) {
       val = rot_tc_one_8(c, val, rl);
    }
+   return val;
 }
 
 u16 rot_tc_one_16(cpu* c, u16 val, i8 rl) {
@@ -464,9 +466,11 @@ u16 rot_tc_one_16(cpu* c, u16 val, i8 rl) {
 }
 
 u16 rot_tc_16(cpu* c, u16 val, int rotate_amount, i8 rl) {
-   for (int i = 0; i < rotate_amount; i++) {
+   int i;
+   for (i = 0; i < rotate_amount; i++) {
       val = rot_tc_one_16(c, val, rl);
    }
+   return val;
 }
 
 void rotate_l_r_tc(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl) {

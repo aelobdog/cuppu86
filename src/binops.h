@@ -1,7 +1,7 @@
 #ifndef BINOPS_H
 #define BINOPS_H
 
-#include "cpu.h"
+#include "types.h"
 
 u8  and8  (cpu* c,  u8 op1, u8  op2);
 u16 and16 (cpu* c, u16 op1, u16 op2);

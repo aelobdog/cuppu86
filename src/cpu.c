@@ -1,15 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cpu.h"
-#include "move.h"
-#include "types.h"
-#include "memory.h"
-#include "flagops.h"
-#include "rot_shf.h"
-#include "inc_dec.h"
-#include "adjusts.h"
-#include "add_sub.h"
-#include "binops.h"
 
 /* MOD and R/M are treated as a combined entity.
  * For move instruction :
@@ -2222,7 +2213,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                case 7: 
                   sub8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0);
                   break;
-               default: (c->ip)--; // Just to counter the ip++ that happens after the if.
+               default: (c->ip)--; /* Just to counter the ip++ that happens after the if. */
             }
             (c->ip)++;
          } else {
@@ -2262,7 +2253,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                   sub8(c, cpu_read_u8_at(c, src_addr), 
                        cpu_read_u8_at(c, addr), 0);
                   break;
-               default: (c->ip)--; // Just to counter the ip++ that happens after the if
+               default: (c->ip)--; /* Just to counter the ip++ that happens after the if. */
             }
             (c->ip)++;
          }

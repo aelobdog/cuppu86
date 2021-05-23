@@ -1,7 +1,8 @@
 #ifndef MOVE_H
 #define MOVE_H
 
-#include "cpu.h"
+#include "cpu_extra.h"
+#include "types.h"
 
 void mov_r16i(cpu* c, reg dst, u16 val);
 void mov_r8i(cpu* c, reg dst, u8 val);

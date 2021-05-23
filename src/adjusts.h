@@ -1,8 +1,6 @@
 #ifndef ADJUSTS_H
 #define ADJUSTS_H
 
-#include "cpu.h"
-#include "flagops.h"
 #include "types.h"
 
 void aaa(cpu *c);
