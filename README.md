@@ -3,15 +3,15 @@
 # Cuppu
 
 ## What is Cuppu ?
-Cuppu86 is an 8086 emulator written in C89.
+Cuppu86 is an 8086 emulator backend written in C89.
 
-## Goals
-I'm a third year student currently and as part of my coursework, I have taken a course on microprocessors. I am using this opportunity to understand how microprocessors work, for example how instructions are fetched, decoded and executed, etc.
+## About
+This project was started in order to learn more about how a simple processor like the 8086 works. The project is designed to work as a "library" in the sense that it provides all the back-end functionality of a "cpu". Third party clients can be designed to work with this code by downloading the files in this repo and then "including" the [cpu.h] header file.
 
-Since the main goal of the Cuppu86 project is to understand how the processors like the 8086 work, there is little to no importance given to make the codebase clean/elegant/whatever.
+As of now, there are no clients for this project, but I'm thinking of writing a GUI client in Zig. Also, my friend [Samarth](https://github.com/samarthkm) is working on a terminal based client at the moment.
 
 ## License
-    Copyright (C) 2021 Ashwin Godbole, Samarth Krishna Murthy
+    Copyright (C) 2021 Ashwin Godbole
  
     Cuppu86 is free software: you can redistribute it and/or modify it under the
     terms of the GNU General Public License as published by the Free Software

@@ -1,6 +1,4 @@
-#include "move.h"
-#include "types.h"
-#include "flagops.h"
+#include "cpu.h"
 
 void mov_r16i(cpu *c, reg r, u16 val) {
    switch (r) {

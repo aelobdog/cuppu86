@@ -1,5 +1,5 @@
 #include "add_sub.h"
-#include "flagops.h"
+#include "cpu.h"
 
 u8 add8 (cpu* c, u8 op1, u8 op2, u8 includeCarry) {
    u8 sum, low_nib;
@@ -143,6 +143,37 @@ void cmps(cpu *c, u8 memsize) {
       update = 2;
    }
 
-   if(getDF(c)) c->si -= update;
-   else c->si += update;
+   if(getDF(c)) {
+      c->si -= update;
+      c->di -= update;
+   }
+   else {
+      c->si += update;
+      c->di += update;
+   }
+}
+
+void scas(cpu *c, u8 memsize) {
+   u8 update;
+   update = 0;
+   if(memsize == 8) {
+      sub8(
+         c,
+         get_reg8_val(c, AL), 
+         cpu_read_u8_at(c, base_offset(c->es, c->di)),
+         0
+      );
+      update = 1;
+   } else {
+      sub16(
+         c,
+         get_reg16_val(c, AX), 
+         cpu_read_u16_at(c, base_offset(c->es, c->di)),
+         0
+      );
+      update = 2;
+   }
+
+   if(getDF(c)) c->di -= update;
+   else c->di += update;
 }

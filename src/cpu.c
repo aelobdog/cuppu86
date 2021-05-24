@@ -1499,6 +1499,45 @@ void cpu_exec(cpu *c, u8 opcode) {
          }
       break;
 
+      case 0x8d:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 0);
+         mod = MOD(next);
+         get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+         set_reg16(c, rg, offset);
+      break;
+
+      case 0xc4:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 0);
+         mod = MOD(next);
+         get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+         addr = get_mrm_loc(
+            c,
+            m_rm,
+            (segment_override != 0)
+            ?  get_base_override(c, segment_override)
+            :  get_base_from_mrm(c, m_rm),
+            offset
+         );
+         set_reg16(c, rg, cpu_read_u16_at(c, addr));
+         set_reg16(c, ES, cpu_read_u16_at(c, addr+2));
+      break;
+      
+      case 0xc5:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 0);
+         mod = MOD(next);
+         get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+         addr = get_mrm_loc(
+            c,
+            m_rm,
+            (segment_override != 0)
+            ?  get_base_override(c, segment_override)
+            :  get_base_from_mrm(c, m_rm),
+            offset
+         );
+         set_reg16(c, rg, cpu_read_u16_at(c, addr));
+         set_reg16(c, DS, cpu_read_u16_at(c, addr+2));
+      break;
+
       case 0x8e:
          extract_rg_mrm(c, &next, &rg, &m_rm, 0);
          if (m_rm >= 24) {
@@ -1766,251 +1805,182 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xab: stos(c, 16); break;
       case 0xac: lods(c, 8);  break;
       case 0xad: lods(c, 16); break;
+      case 0xae: scas(c, 8);  break;
+      case 0xaf: scas(c, 16); break;
       case 0x27: daa(c); break;
       case 0x2f: das(c); break;
       case 0x37: aaa(c); break;
       case 0x3f: aas(c); break;
 
+      case 0xa8:
+         addr = base_offset(c->cs, c->ip);
+         and8(c, get_reg8_val(c, AL), cpu_read_u8_at(c, addr));
+         (c->ip)++;
+      break;
+
+      case 0xa9:
+         addr = base_offset(c->cs, c->ip);
+         and16(c, get_reg16_val(c, AX), cpu_read_u16_at(c, addr));
+         (c->ip)+=2;
+      break;
+
       case 0xd0:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);
-         switch(rg) {
-         case 0: break; /* rol 8 1 */
-         case 1: break; /* ror 8 1 */
-         case 2: break; /* rcl 8 1 */
-         case 3: break; /* rcr 8 1 */
-         
-         case 4: 
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
-            shift_left_r(c, other_reg, 1, 8);
+            switch(rg) {
+               case 0: rotate_left_r(c, other_reg, 1, 8); break;
+               case 1: rotate_right_r(c, other_reg, 1, 8); break;
+               case 2: rotate_tc_r(c, other_reg, 1, 8, -1); break;
+               case 3: rotate_tc_r(c, other_reg, 1, 8, 1);break;
+               case 4: shift_left_r(c, other_reg, 1, 8); break;
+               case 5: shift_uright_r(c, other_reg, 1, 8); break;
+               case 6: break;
+               case 7: shift_iright_r(c, other_reg, 1, 8); break;
+            }
          } else {
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-            shift_left_m(
-               c, 
-               get_mrm_loc(
-                  c,
-                  m_rm,
-                  (segment_override != 0)
-                  ?  get_base_override(c, segment_override)
-                  :  get_base_from_mrm(c, m_rm),
-                  offset
-               ), 
-               1, 
-               8
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
             );
-         }
-         break;
-
-         case 5: 
-            if (m_rm >= 24) {
-               other_reg = get_reg8(R_M(next));
-               shift_uright_r(c, other_reg, 1, 8);
-            } else {
-               mod = MOD(next);
-               get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-               shift_uright_m(
-                  c, 
-                  get_mrm_loc(
-                     c,
-                     m_rm,
-                     (segment_override != 0)
-                     ?  get_base_override(c, segment_override)
-                     :  get_base_from_mrm(c, m_rm),
-                     offset
-                  ), 
-                  1, 
-                  8
-               );
+            switch(rg) {
+               case 0: rotate_left_m(c, addr, 1, 8); break;
+               case 1: rotate_right_m(c, addr, 1, 8); break;
+               case 2: rotate_tc_m(c, addr, 1, 8, 1); break;
+               case 3: rotate_tc_m(c, addr, 1, 8, 1); break;
+               case 4: shift_left_m(c, addr, 1, 8); break;
+               case 5: shift_uright_m(c, addr, 1, 8);break;
+               case 6: break;
+               case 7: shift_iright_m(c, addr, 1, 8);break;
             }
-         break;
-
-         case 6: break; /* unused */
-
-         case 7: 
-            if (m_rm >= 24) {
-               other_reg = get_reg8(R_M(next));
-               shift_iright_r(c, other_reg, 1, 8);
-            } else {
-               mod = MOD(next);
-               get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-               shift_iright_m(
-                  c, 
-                  get_mrm_loc(
-                     c,
-                     m_rm,
-                     (segment_override != 0)
-                     ?  get_base_override(c, segment_override)
-                     :  get_base_from_mrm(c, m_rm),
-                     offset
-                  ), 
-                  1, 
-                  8
-               );
-            }
-         break;
          }
       break;
 
       case 0xd1:
          extract_rg_mrm(c, &next, &rg, &m_rm, 16);
-         switch(rg) {
-         case 0: break; /* rol 16 1 */
-         case 1: break; /* ror 16 1 */
-         case 2: break; /* rcl 16 1 */
-         case 3: break; /* rcr 16 1 */
-         case 4: 
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
-            shift_left_r(c, other_reg, 1, 16);
+            switch(rg) {
+               case 0: rotate_left_r(c, other_reg, 1, 16); break;
+               case 1: rotate_right_r(c, other_reg, 1, 16); break;
+               case 2: rotate_tc_r(c, other_reg, 1, 16, -1); break;
+               case 3: rotate_tc_r(c, other_reg, 1, 16, 1);break;
+               case 4: shift_left_r(c, other_reg, 1, 16); break;
+               case 5: shift_uright_r(c, other_reg, 1, 16); break;
+               case 6: break;
+               case 7: shift_iright_r(c, other_reg, 1, 16); break;
+            }
          } else {
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-            shift_left_m(
-               c, 
-               get_mrm_loc(
-                  c,
-                  m_rm,
-                  (segment_override != 0)
-                  ?  get_base_override(c, segment_override)
-                  :  get_base_from_mrm(c, m_rm),
-                  offset
-               ), 
-               1, 
-               16
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
             );
-         }
-         break;
-
-         case 5: 
-            if (m_rm >= 24) {
-               other_reg = get_reg8(R_M(next));
-               shift_uright_r(c, other_reg, 1, 16);
-            } else {
-               mod = MOD(next);
-               get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-               shift_uright_m(
-                  c, 
-                  get_mrm_loc(
-                     c,
-                     m_rm,
-                     (segment_override != 0)
-                     ?  get_base_override(c, segment_override)
-                     :  get_base_from_mrm(c, m_rm),
-                     offset
-                  ), 
-                  1, 
-                  16
-               );
+            switch(rg) {
+               case 0: rotate_left_m(c, addr, 1, 16); break;
+               case 1: rotate_right_m(c, addr, 1, 16); break;
+               case 2: rotate_tc_m(c, addr, 1, 16, 1); break;
+               case 3: rotate_tc_m(c, addr, 1, 16, 1); break;
+               case 4: shift_left_m(c, addr, 1, 16); break;
+               case 5: shift_uright_m(c, addr, 1, 16);break;
+               case 6: break;
+               case 7: shift_iright_m(c, addr, 1, 16);break;
             }
-         break;
-
-         case 6: break; /* unused */
-
-         case 7: 
-            if (m_rm >= 24) {
-               other_reg = get_reg8(R_M(next));
-               shift_iright_r(c, other_reg, 1, 16);
-            } else {
-               mod = MOD(next);
-               get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-               shift_iright_m(
-                  c, 
-                  get_mrm_loc(
-                     c,
-                     m_rm,
-                     (segment_override != 0)
-                     ?  get_base_override(c, segment_override)
-                     :  get_base_from_mrm(c, m_rm),
-                     offset
-                  ), 
-                  1, 
-                  16
-               );
-            }
-         break;
          }
       break;
      
       case 0xd2:
          extract_rg_mrm(c, &next, &rg, &m_rm, 8);
-         switch(rg) {
-         case 0: break; /* rol 8 1 */
-         case 1: break; /* ror 8 1 */
-         case 2: break; /* rcl 8 1 */
-         case 3: break; /* rcr 8 1 */
-
-         case 4: 
          if (m_rm >= 24) {
+            u8 rotamt;
+            rotamt = get_reg8_val(c, CL);
             other_reg = get_reg8(R_M(next));
-            shift_left_r(c, other_reg, get_reg8_val(c, CL), 8);
+            switch(rg) {
+               case 0: rotate_left_r  (c, other_reg, rotamt, 8); break;
+               case 1: rotate_right_r (c, other_reg, rotamt, 8); break;
+               case 2: rotate_tc_r    (c, other_reg, rotamt, 8, -1); break;
+               case 3: rotate_tc_r    (c, other_reg, rotamt, 8,  1); break;
+               case 4: shift_left_r   (c, other_reg, rotamt, 8); break;
+               case 5: shift_uright_r (c, other_reg, rotamt, 8); break;
+               case 6: break;
+               case 7: shift_iright_r (c, other_reg, rotamt, 8); break;
+            }
          } else {
+            u8 rotamt;
+            rotamt = get_reg8_val(c, CL);
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-            shift_left_m(
-               c, 
-               get_mrm_loc(
-                  c,
-                  m_rm,
-                  (segment_override != 0)
-                  ?  get_base_override(c, segment_override)
-                  :  get_base_from_mrm(c, m_rm),
-                  offset
-               ), 
-               get_reg8_val(c, CL), 
-               8
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
             );
-         }
-         break;
-
-         case 5: break; /* shr 8 1 */
-         case 6: break; /* unused  */
-         case 7: break; /* sar 8 1 */
+            switch(rg) {
+               case 0: rotate_left_m  (c, addr, rotamt, 8); break;
+               case 1: rotate_right_m (c, addr, rotamt, 8); break;
+               case 2: rotate_tc_m    (c, addr, rotamt, 8, -1); break;
+               case 3: rotate_tc_m    (c, addr, rotamt, 8,  1); break;
+               case 4: shift_left_m   (c, addr, rotamt, 8); break;
+               case 5: shift_uright_m (c, addr, rotamt, 8); break;
+               case 6: break;
+               case 7: shift_iright_m (c, addr, rotamt, 8); break;
+            }
          }
       break;
-     
+
       case 0xd3:
          extract_rg_mrm(c, &next, &rg, &m_rm, 16);
-         switch(rg) {
-         case 0: break; /* rol 8 1 */
-         case 1: break; /* ror 8 1 */
-         case 2: break; /* rcl 8 1 */
-         case 3: break; /* rcr 8 1 */
-
-         case 4: 
          if (m_rm >= 24) {
+            u8 rotamt;
+            rotamt = get_reg8_val(c, CL);
             other_reg = get_reg16(R_M(next));
-            shift_left_r(c, other_reg, get_reg8_val(c, CL), 16);
+            switch(rg) {
+               case 0: rotate_left_r  (c, other_reg, rotamt, 16); break;
+               case 1: rotate_right_r (c, other_reg, rotamt, 16); break;
+               case 2: rotate_tc_r    (c, other_reg, rotamt, 16, -1); break;
+               case 3: rotate_tc_r    (c, other_reg, rotamt, 16,  1); break;
+               case 4: shift_left_r   (c, other_reg, rotamt, 16); break;
+               case 5: shift_uright_r (c, other_reg, rotamt, 16); break;
+               case 6: break;
+               case 7: shift_iright_r (c, other_reg, rotamt, 16); break;
+            }
          } else {
+            u8 rotamt;
+            rotamt = get_reg8_val(c, CL);
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
-
-            shift_left_m(
-               c, 
-               get_mrm_loc(
-                  c,
-                  m_rm,
-                  (segment_override != 0)
-                  ?  get_base_override(c, segment_override)
-                  :  get_base_from_mrm(c, m_rm),
-                  offset
-               ), 
-               get_reg8_val(c, CL), 
-               16
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
             );
-         }
-         break;
-
-         case 5: break; /* shr 8 1 */
-         case 6: break; /* unused  */
-         case 7: break; /* sar 8 1 */
+            switch(rg) {
+               case 0: rotate_left_m  (c, addr, rotamt, 16); break;
+               case 1: rotate_right_m (c, addr, rotamt, 16); break;
+               case 2: rotate_tc_m    (c, addr, rotamt, 16, -1); break;
+               case 3: rotate_tc_m    (c, addr, rotamt, 16,  1); break;
+               case 4: shift_left_m   (c, addr, rotamt, 16); break;
+               case 5: shift_uright_m (c, addr, rotamt, 16); break;
+               case 6: break;
+               case 7: shift_iright_m (c, addr, rotamt, 16); break;
+            }
          }
       break;
 
@@ -2321,6 +2291,46 @@ void cpu_exec(cpu *c, u8 opcode) {
                   break;
             }
             (c->ip)+=1;
+         }
+      break;
+
+      case 0x84:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         if (m_rm >= 24) {
+            other_reg = get_reg8(R_M(next));
+            and8(c, get_reg8_val(c, other_reg), get_reg8_val(c, rg));
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            and8(c, get_reg8_val(c, rg), cpu_read_u8_at(c, addr));
+         }
+      break;
+
+      case 0x85:
+         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         if (m_rm >= 24) {
+            other_reg = get_reg16(R_M(next));
+            and16(c, get_reg16_val(c, other_reg), get_reg16_val(c, rg));
+         } else {
+            mod = MOD(next);
+            get_offset_mrm(c, &next, &m_rm, &mod, &offset);
+            addr = get_mrm_loc(
+               c,
+               m_rm,
+               (segment_override != 0)
+               ?  get_base_override(c, segment_override)
+               :  get_base_from_mrm(c, m_rm),
+               offset
+            );
+            and16(c, get_reg16_val(c, rg), cpu_read_u16_at(c, addr));
          }
       break;
 

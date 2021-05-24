@@ -6,9 +6,6 @@
  */
 
 #include "cpu.h"
-#include "types.h"
-#include "flagops.h"
-#include "rot_shf.h"
 
 /* masks used for rotate operations */
 u16 rotr_masks[16] = {
@@ -473,7 +470,7 @@ u16 rot_tc_16(cpu* c, u16 val, int rotate_amount, i8 rl) {
    return val;
 }
 
-void rotate_l_r_tc(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl) {
+void rotate_tc_r(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl) {
    val value;
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
@@ -488,7 +485,7 @@ void rotate_l_r_tc(cpu* c, reg r, int rotate_amount, u8 memsize, i8 rl) {
    }
 }
 
-void rotate_l_m_tc(cpu* c, u32 addr, int rotate_amount, u8 memsize, i8 rl) {
+void rotate_tc_m(cpu* c, u32 addr, int rotate_amount, u8 memsize, i8 rl) {
    val value;
    if (memsize == 8) {
       value.v16 = 0; /* just to ensure that there is no data corruption */
