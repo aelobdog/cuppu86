@@ -1,7 +1,7 @@
 #ifndef ADJUSTS_H
 #define ADJUSTS_H
 
-#include "cpu.h"
+#include "types.h"
 
 void aaa(cpu *c);
 void aas(cpu *c);

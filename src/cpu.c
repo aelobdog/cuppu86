@@ -2386,6 +2386,83 @@ void cpu_exec(cpu *c, u8 opcode) {
          }
       break;
 
+      case 0x70: jump_short(c,  getOF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x71: jump_short(c, !getOF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x72: jump_short(c,  getCF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x73: jump_short(c, !getCF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x74: jump_short(c,  getZF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x75: jump_short(c, !getZF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x76: jump_short(c,  (getCF(c) || getZF(c)), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x77: jump_short(c, !(getCF(c) || getZF(c)), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x78: jump_short(c,  getSF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x79: jump_short(c, !getSF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7a: jump_short(c,  getPF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7b: jump_short(c, !getPF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7c: jump_short(c, (getSF(c) != getOF(c)), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7d: jump_short(c, (getSF(c) == getOF(c)), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7e: jump_short(c,  (getZF(c) || (getSF(c) != getOF(c))), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0x7f: jump_short(c, (!getZF(c) || (getSF(c) == getOF(c))), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xe3: jump_short(c, (get_reg16_val(c, CX) == 0), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xe9: jump_near (c, 1, cpu_read_u16_at(c, base_offset(c->cs, c->ip))); (c->ip)+=2; break;
+      case 0xeb: jump_short(c, 1, cpu_read_u8_at (c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+
+      case 0xea:
+         jump_far (
+            c, 1, 
+            cpu_read_u16_at(c, base_offset(c->cs, c->ip)), 
+            cpu_read_u16_at(c, base_offset(c->cs, (c->ip + 2)))
+         );
+         (c->ip)+=4; 
+      break;
+
+      case 0xf2:
+         /* REPNE, REPNZ */
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+         while (c->cx != 0) {
+            /* I'm going to assume that the assembler
+             * doesn't mess up and give an instruction
+             * other than the valid string instructions
+             * to REPNE/REPNZ, because that will mess
+             * with this next call to cpu_exec
+             */
+            cpu_exec(c, next);
+            /* since this decrement must happen
+             * without any of the flags being
+             * affected, I'm decrementing the
+             * value in cx directly
+             */
+            (c->cx)--;
+            if(getZF(c)) break;
+         }
+      break;
+
+      case 0xf3:
+         /* REP, REPE, REPZ */
+         next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
+         (c->ip)++;
+         while (c->cx != 0) {
+            /* I'm going to assume that the assembler
+             * doesn't mess up and give an instruction
+             * other than the valid string instructions
+             * to REPNE/REPNZ, because that will mess
+             * with this next call to cpu_exec
+             */
+            cpu_exec(c, next);
+            /* since this decrement must happen
+             * without any of the flags being
+             * affected, I'm decrementing the
+             * value in cx directly
+             */
+            (c->cx)--;
+            if(!getZF(c)) break;
+         }
+      break;
+
+      case 0xe0: loop_short(c, (getZF(c) == 0), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xe1: loop_short(c,  getZF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+      case 0xe2: loop_short(c,  1, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
+
       default: break; /* nops and unused */
    }
    /* setting the segment override to 0 after executing every instruction */

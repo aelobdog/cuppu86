@@ -6,6 +6,7 @@
  * that 8086 supports : 2^20 bytes 
  */
 #define MAX_MEMORY 1048576
+#define IO_MEMORY  65536
 
 /* function that creates MAX_MEMORY number
  * of bytes and returns a pointer it.

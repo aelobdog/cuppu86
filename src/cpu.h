@@ -18,6 +18,7 @@
 #include "inc_dec.h"
 #include "flagops.h"
 #include "move.h"
+#include "jumps.h"
 
 /* cpu procs */
 cpu* cpu_make();

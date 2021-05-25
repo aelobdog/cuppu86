@@ -1,5 +1,4 @@
-#include "inc_dec.h"
-#include "flagops.h"
+#include "cpu.h"
 
 /* HANDLE ALL THE FLAG MODIFICATIONS !! */
 void inc_dec_r(cpu* c, reg r, i8 id) {
