@@ -306,10 +306,29 @@ u16 switch_bytes(u16 val) {
    return ((val << 8) + ((val >> 8) & 0xff));
 }
 
+/* create a little endian number */
+u16 create_le_word(u8 lo, u8 hi) {
+   return (u16) (((u16)(hi) << 8) + lo);
+}
+
 u8 cpu_read_u8_at(cpu* c, u32 addr) {
    u8 data;
    data = c->mem[addr];
    return data;
+}
+
+u8 cpu_read_u8_iop(cpu *c, u16 port) {
+   return (c->iop)[port];
+}
+
+void cpu_write_u8_iop(cpu *c, u16 port, u8 val) {
+   (c->iop)[port] = val;
+}
+
+/* little endian write */
+void cpu_write_u16_iop(cpu* c, u16 port, u16 data) {
+   c->iop[port] = (u8)(data & 0xff);
+   c->iop[port + 1] = (u8)((data & 0xff00) >> 8);
 }
 
 /* little endian read */
@@ -318,6 +337,13 @@ u16 cpu_read_u16_at(cpu* c, u32 addr) {
    data = c->mem[addr];
    data = data + ((c->mem[addr + 1]) << 8);
    return data;
+}
+
+u16 cpu_read_u16_iop(cpu *c, u16 port) {
+   return create_le_word(
+      (c->iop)[port],
+      (c->iop)[port + 1]
+   );
 }
 
 void cpu_write_u8_at(cpu* c, u32 addr, u8 data) {
@@ -345,8 +371,19 @@ void cpu_init (cpu *c) {
    cpu_init_segments(c);
 }
 
-cpu* cpu_make () {
-   return (cpu*)malloc(sizeof(cpu));
+cpu* cpu_make() {
+   cpu* c = (cpu*)malloc(sizeof(cpu));
+   c->mem = (u8*) malloc(sizeof(u8) * MAX_MEMORY);
+   c->iop = (u8*) malloc(sizeof(u8) * IO_MEMORY);
+   return c;
+}
+
+void cpu_deinit(cpu *c) {
+   if(c != NULL) {
+      if(c->mem != NULL) free(c->mem);
+      if(c->iop != NULL) free(c->iop);
+      free(c);
+   }
 }
 
 /* set segments with custom values */
@@ -366,8 +403,9 @@ void cpu_init_segments(cpu *c) {
 }
 
 /* assign memory to RAM */
-void cpu_setmem(cpu *c, u8 *mem) {
+void cpu_setmem(cpu *c, u8 *mem, u8* iop) {
    c->mem = mem;
+   c->iop = iop;
 }
 
 /* fetch a byte from memory
@@ -2463,6 +2501,67 @@ void cpu_exec(cpu *c, u8 opcode) {
       case 0xe1: loop_short(c,  getZF(c), cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
       case 0xe2: loop_short(c,  1, cpu_read_u8_at(c, base_offset(c->cs, c->ip))); (c->ip)++; break;
 
+      case 0xe4:
+         addr = base_offset(c->cs, c->ip);
+         set_reg8(c, AL, cpu_read_u8_iop(c, cpu_read_u8_at(c, addr)));
+         (c->ip)++;
+      break;
+
+      case 0xe5:
+         addr = base_offset(c->cs, c->ip);
+         set_reg16(c, AX, cpu_read_u16_iop(c, cpu_read_u8_at(c, addr)));
+         (c->ip)++;
+      break;
+
+      case 0xe6:
+         addr = base_offset(c->cs, c->ip);
+         cpu_write_u8_iop(
+            c, 
+            cpu_read_u8_at(c, addr), 
+            get_reg8_val(c, AL)
+         );
+      break;
+
+      case 0xe7:
+         addr = base_offset(c->cs, c->ip);
+         cpu_write_u16_iop(
+            c, 
+            cpu_read_u8_at(c, addr), 
+            get_reg16_val(c, AX)
+         );
+      break;
+
+      case 0xec: 
+         set_reg8 (
+            c, 
+            AL, 
+            cpu_read_u8_iop(c, get_reg16_val(c, DX))
+         ); 
+      break;
+
+      case 0xed:
+         set_reg16(
+            c, 
+            AX,
+            cpu_read_u16_iop(c, get_reg16_val(c, DX))
+         );
+      break;
+
+      case 0xee:
+         cpu_write_u8_iop(
+            c, 
+            get_reg16_val(c, DX),
+            get_reg8_val(c, AL)
+         );
+      break;
+
+      case 0xef:
+         cpu_write_u16_iop(
+            c, 
+            get_reg16_val(c, DX),
+            get_reg16_val(c, AX)
+         );
+      break;
       default: break; /* nops and unused */
    }
    /* setting the segment override to 0 after executing every instruction */

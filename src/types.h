@@ -32,6 +32,7 @@ typedef struct cpu {
    u16 flags;
    u8  halted;
    u8* mem; /* main memory */
+   u8* iop; /* io ports available */
 } cpu;
 
 typedef union val {
