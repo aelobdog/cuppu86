@@ -375,6 +375,7 @@ cpu* cpu_make() {
    cpu* c = (cpu*)malloc(sizeof(cpu));
    c->mem = (u8*) malloc(sizeof(u8) * MAX_MEMORY);
    c->iop = (u8*) malloc(sizeof(u8) * IO_MEMORY);
+   cpu_init(c);
    return c;
 }
 
