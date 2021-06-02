@@ -19,6 +19,8 @@
 #include "flagops.h"
 #include "move.h"
 #include "jumps.h"
+#include "mul_div.h"
+#include "push_pop.h"
 
 /* cpu procs */
 cpu* cpu_make();
@@ -59,12 +61,11 @@ u16 get_base_from_mrm(cpu* c, u8 mrm);
 u32 base_offset(u16 base, u16 offset);
 u32 get_mrm_loc(cpu *c, u8 mrm, u16 base_segment, u16 offset);
 
-void push_r(cpu *c, reg r);
-void pop_r(cpu *c, reg r);
 void xchg_ax(cpu* c, reg r);
 u8   xchg8 (cpu *c, reg r, u8  val);
 u16  xchg16(cpu *c, reg r, u16 val);
 void sahf(cpu* c);
 void lahf(cpu* c);
+void xlat(cpu* c);
 
 #endif
