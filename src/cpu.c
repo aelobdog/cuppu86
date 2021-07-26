@@ -184,16 +184,17 @@ u8 get_sreg16(u8 regnum) {
    return 255; /* should never happen */
 }
 
-void extract_rg_mrm(cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype) {
+u8 extract_rg_mrm(cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype) {
+   /* reg r is the register code corresponding to the register encoded in rg */
    *next = cpu_read_u8_at(c, base_offset(c->cs, c->ip));
    (c->ip)++;
-   *rg  = REG(*next);
    *m_rm = MRM(*next);
    *rg = (regtype == 8)
             ? get_reg8(*rg)
             : (regtype == 16)
                ? get_reg16(*rg)
                : get_sreg16(*rg);
+   return REG(*next);
 }
 
 void get_offset_mrm(cpu* c, u8* next, u8* m_rm, u8* mod, u16* offset) {
@@ -381,6 +382,7 @@ void cpu_deinit(cpu *c) {
       if(c->mem != NULL) free(c->mem);
       if(c->iop != NULL) free(c->iop);
       free(c);
+      c = NULL;
    }
 }
 
@@ -433,7 +435,7 @@ u8 cpu_fetch(cpu *c) {
 }
 
 void cpu_exec(cpu *c, u8 opcode) {
-   u8 other_reg, mod, next, m_rm, rg;
+   u8 other_reg, mod, next, m_rm, rg, regi;
    u16 offset, src_val;
    u32 addr, src_addr;
 
@@ -1491,9 +1493,11 @@ void cpu_exec(cpu *c, u8 opcode) {
 
       case 0x8b:
          extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         // printf("---> %x\n", get_reg16_val(c, rg));
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             mov_r16r(c, rg, other_reg);
+            // printf("---> %x\n", get_reg16_val(c, rg));
          } else {
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
@@ -1600,8 +1604,8 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xc7:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 0);
-         if(rg == 0) {
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 0);
+         if(regi == 0) {
             mod = MOD(next);
             get_offset_mrm(c, &next, &m_rm, &mod, &offset);
             addr = get_mrm_loc(
@@ -1684,11 +1688,11 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xff:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   inc_dec_r(c, other_reg, 1);
                   break;
@@ -1717,7 +1721,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0:
                   inc_dec_m(c, src_addr, 16, 1);
                   break;
@@ -1860,7 +1864,7 @@ void cpu_exec(cpu *c, u8 opcode) {
       
       case 0x9e: sahf(c);        break;
       case 0x9f: lahf(c);        break;
-      case 0xf4: c->halted = 1;  break;
+      case 0xf4: c->halted = 1;  exit(0);
       case 0xf5: invertCF(c);    break;
       case 0xf8: resetCF(c);     break;
       case 0xf9: setCF(c);       break;
@@ -1897,10 +1901,10 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xd0:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 8);
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_r(c, other_reg, 1, 8); break;
                case 1: rotate_right_r(c, other_reg, 1, 8); break;
                case 2: rotate_tc_r(c, other_reg, 1, 8, -1); break;
@@ -1921,7 +1925,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_m(c, addr, 1, 8); break;
                case 1: rotate_right_m(c, addr, 1, 8); break;
                case 2: rotate_tc_m(c, addr, 1, 8, 1); break;
@@ -1935,10 +1939,10 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xd1:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_r(c, other_reg, 1, 16); break;
                case 1: rotate_right_r(c, other_reg, 1, 16); break;
                case 2: rotate_tc_r(c, other_reg, 1, 16, -1); break;
@@ -1959,7 +1963,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_m(c, addr, 1, 16); break;
                case 1: rotate_right_m(c, addr, 1, 16); break;
                case 2: rotate_tc_m(c, addr, 1, 16, 1); break;
@@ -1973,12 +1977,12 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
      
       case 0xd2:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 8);
          if (m_rm >= 24) {
             u8 rotamt;
             rotamt = get_reg8_val(c, CL);
             other_reg = get_reg8(R_M(next));
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_r  (c, other_reg, rotamt, 8); break;
                case 1: rotate_right_r (c, other_reg, rotamt, 8); break;
                case 2: rotate_tc_r    (c, other_reg, rotamt, 8, -1); break;
@@ -2001,7 +2005,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_m  (c, addr, rotamt, 8); break;
                case 1: rotate_right_m (c, addr, rotamt, 8); break;
                case 2: rotate_tc_m    (c, addr, rotamt, 8, -1); break;
@@ -2015,12 +2019,12 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xd3:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
          if (m_rm >= 24) {
             u8 rotamt;
             rotamt = get_reg8_val(c, CL);
             other_reg = get_reg16(R_M(next));
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_r  (c, other_reg, rotamt, 16); break;
                case 1: rotate_right_r (c, other_reg, rotamt, 16); break;
                case 2: rotate_tc_r    (c, other_reg, rotamt, 16, -1); break;
@@ -2043,7 +2047,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: rotate_left_m  (c, addr, rotamt, 16); break;
                case 1: rotate_right_m (c, addr, rotamt, 16); break;
                case 2: rotate_tc_m    (c, addr, rotamt, 16, -1); break;
@@ -2057,11 +2061,11 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0x80:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 8);
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
                   break;
@@ -2100,7 +2104,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: 
                   cpu_write_u8_at(c, src_addr, 
                         add8(c, cpu_read_u8_at(c, src_addr), 
@@ -2146,11 +2150,11 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0x81:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), cpu_read_u16_at(c, addr), 0));
                   break;
@@ -2189,7 +2193,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: 
                   cpu_write_u16_at(c, src_addr, 
                         add16(c, cpu_read_u16_at(c, src_addr), 
@@ -2235,11 +2239,11 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0x82:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 8);
          if (m_rm >= 24) {
             other_reg = get_reg8(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   set_reg8(c, other_reg, add8(c, get_reg8_val(c, other_reg), cpu_read_u8_at(c, addr), 0));
                   break;
@@ -2270,7 +2274,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: 
                   cpu_write_u8_at(c, src_addr, 
                         add8(c, cpu_read_u8_at(c, src_addr), 
@@ -2302,11 +2306,11 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0x83:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
          if (m_rm >= 24) {
             other_reg = get_reg16(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   set_reg16(c, other_reg, add16(c, get_reg16_val(c, other_reg), (u16)(cpu_read_u8_at(c, addr)), 0));
                   break;
@@ -2336,7 +2340,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                :  get_base_from_mrm(c, m_rm),
                offset
             );
-            switch(rg) {
+            switch(regi) {
                case 0: 
                   cpu_write_u16_at(c, src_addr, 
                         add16(c, cpu_read_u16_at(c, src_addr), 
@@ -2532,12 +2536,12 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xf6:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 8);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 8);
          if (m_rm >= 24) {
             u8 immed;
             other_reg = get_reg8(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   immed = cpu_read_u8_at(c, addr);
                   (c->ip)++;
@@ -2581,7 +2585,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                offset
             );
             mem_val = cpu_read_u8_at(c, src_addr);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   immed = cpu_read_u8_at(c, addr);
                   (c->ip)++;
@@ -2610,12 +2614,13 @@ void cpu_exec(cpu *c, u8 opcode) {
       break;
 
       case 0xf7:
-         extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         regi = extract_rg_mrm(c, &next, &rg, &m_rm, 16);
+         // printf("\nim in here %d reg : %d!\n", m_rm, rg);
          if (m_rm >= 24) {
             u16 immed;
             other_reg = get_reg16(R_M(next));
             addr = base_offset(c->cs, c->ip);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   immed = cpu_read_u16_at(c, addr);
                   (c->ip)+=2;
@@ -2632,6 +2637,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                      neg16(c, get_reg16_val(c, other_reg)));
                   break;
                case 4: 
+                  // printf("-- %x --\n", immed);
                   mul16(c, get_reg16_val(c, other_reg), 0);
                   break;
                case 5:
@@ -2643,6 +2649,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                case 7: 
                   div16(c, get_reg16_val(c, other_reg), 1);
                   break;
+               // default : printf("weird af\n");
             }
          } else {
             u16 immed;
@@ -2659,7 +2666,7 @@ void cpu_exec(cpu *c, u8 opcode) {
                offset
             );
             mem_val = cpu_read_u16_at(c, src_addr);
-            switch(rg) {
+            switch(regi) {
                case 0:
                   immed = cpu_read_u16_at(c, addr);
                   (c->ip)+=2;
@@ -2803,15 +2810,11 @@ void cpu_exec(cpu *c, u8 opcode) {
 
 /* dump all regs' values */
 void cpu_dump(cpu *c) {
-   printf("\nAX: %4x H\n",   c->ax);
-   printf(  "BX: %4x H\n",   c->bx);
-   printf(  "CX: %4x H\n",   c->cx);
-   printf(  "DX: %4x H\n",   c->dx);
-   printf(  "SP: %4x H\n",   c->sp);
-   printf(  "BP: %4x H\n",   c->bp);
-   printf(  "SI: %4x H\n",   c->si);
-   printf(  "DI: %4x H\n",   c->di);
-   printf(  "----------\n"        );
+   printf("\nAX: %4x H     SP: %4x H\n",   c->ax, c->sp);
+   printf(  "BX: %4x H     BP: %4x H\n",   c->bx, c->bp);
+   printf(  "CX: %4x H     SI: %4x H\n",   c->cx, c->si);
+   printf(  "DX: %4x H     DI: %4x H\n",   c->dx, c->di);
+   printf(  "------------------------\n"        );
    printf(  "CS: %4x H\n",   c->cs);
    printf(  "DS: %4x H\n",   c->ds);
    printf(  "ES: %4x H\n",   c->es);

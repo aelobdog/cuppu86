@@ -9,11 +9,12 @@
 #define IO_MEMORY  65536
 
 /* function that creates MAX_MEMORY number
- * of bytes and returns a pointer it.
+ * of bytes and returns the number of bytes
+ * read from the file.
  * 
  * code that uses mem_create is responsible
  * for deallocating the memory that was
  * allocated using mem_create.
  */
-void mem_load_code(cpu* c, char* filename);
+u64 mem_load_code(cpu* c, char* filename);
 #endif

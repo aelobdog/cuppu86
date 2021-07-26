@@ -30,7 +30,7 @@ u8 add8 (cpu* c, u8 op1, u8 op2, u8 includeCarry) {
    else if (BIT(7, op1) == 1 && BIT(7, op2) == 1 && BIT(7, sum) == 0)
       setOF(c);
    else resetOF(c);
-   
+
    return sum;
 }
 
