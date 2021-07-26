@@ -38,7 +38,6 @@ void cpu_write_u16_at(cpu* c, u32 addr, u16 data);
 void cpu_write_u16_iop(cpu* c, u16 port, u16 data);
 void set_reg8(cpu* c, reg r, u8 val);
 void set_reg16(cpu* c, reg r, u16 val);
-void extract_rg_mrm (cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype);
 void get_offset_mrm(cpu* c, u8* next, u8* m_rm, u8* mod, u16* offset);
 
 u8 cpu_fetch(cpu* c);
@@ -48,6 +47,7 @@ u8 get_sreg16(u8 regnum);
 u8 get_reg8_val(cpu* c, reg r);
 u8 cpu_read_u8_at(cpu* c, u32 addr);
 u8 cpu_read_u8_iop(cpu* c, u16 port);
+u8 extract_rg_mrm (cpu* c, u8* next, u8* rg, u8* m_rm, u8 regtype);
 
 u16 switch_bytes(u16 val);
 u16 create_le_word(u8 lo, u8 hi);

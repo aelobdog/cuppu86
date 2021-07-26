@@ -3,7 +3,7 @@
 #include "memory.h"
 #include "types.h"
 
-void mem_load_code(cpu* c, char* fname) {
+u64 mem_load_code(cpu* c, char* fname) {
    u8 *file;
    u64 size; u32 i;
 
@@ -21,4 +21,5 @@ void mem_load_code(cpu* c, char* fname) {
    }
 
    for (; (u32)i < MAX_MEMORY; i++) c->mem[i] = (u8)0;
+   return size;
 }

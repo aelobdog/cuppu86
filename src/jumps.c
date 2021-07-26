@@ -1,7 +1,8 @@
 #include "jumps.h"
 #include "push_pop.h"
+#include <stdio.h>
 
-void jump_short(cpu *c, u8 condition, u8 ip_inc) {
+void jump_short(cpu *c, u8 condition, i8 ip_inc) {
    if (condition) {
       c->ip += ip_inc;
    }
@@ -11,7 +12,7 @@ void jump_short(cpu *c, u8 condition, u8 ip_inc) {
     */
 }
 
-void jump_near(cpu *c, u8 condition, u16 ip_inc) {
+void jump_near(cpu *c, u8 condition, i16 ip_inc) {
    if (condition) {
       c->ip += ip_inc;
    }
@@ -24,14 +25,14 @@ void jump_far(cpu *c, u8 condition, u16 at_ip, u16 at_cs) {
    }
 }
 
-void loop_short(cpu *c, u8 condition, u8 ip_inc) {
+void loop_short(cpu *c, u8 condition, i8 ip_inc) {
    (c->cx)--;
    if (c->cx != 0 && condition) {
       c->ip += ip_inc;
    }
 }
 
-void call_near_rel(cpu *c, u16 ip_inc) {
+void call_near_rel(cpu *c, i16 ip_inc) {
    push16(c, c->ip); 
    c->ip += ip_inc;
 }
