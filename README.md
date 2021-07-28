@@ -11,7 +11,7 @@ This project was started in order to learn more about how a simple processor lik
 The emulator supports 98% of the opcode set. Instructions involving interrupts are left unimplemented.
 
 ## Demo
-Using a highly highly experimental client that [samarthkm](https://github.com/samarthkm) wrote and I modified, here's a demo of the emulator calculating the factorial of the number 5.
+Using a highly experimental client that [samarthkm](https://github.com/samarthkm) wrote and I modified, here's a demo of the emulator calculating the factorial of the number 5.
 
 <img src="./docs/factorial.gif" alt="Cuppu86 Demo"/>
 
