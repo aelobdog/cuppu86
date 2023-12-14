@@ -2821,6 +2821,20 @@ void cpu_exec(cpu *c, u8 opcode) {
          (c->ip)+=2;
          break;
 
+      case 0xcd:
+         u8 operand = cpu_fetch(c);
+         printf("Interrupt called with argument %d",operand);
+         interrupt(c,operand);
+         break;
+      
+      case 0xcc:
+         interrupt(c,3);
+         break;
+      
+      case 0xcf:
+         iret(c);
+         break;
+   
       default: break; /* nops and unused */
    }
    /* setting the segment override to 0 after executing every instruction */

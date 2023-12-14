@@ -40,7 +40,7 @@
 #include "jumps.h"
 #include "mul_div.h"
 #include "push_pop.h"
-
+#include "interrupts.h"
 /* cpu procs */
 cpu* cpu_make();
 void cpu_init(cpu* c);
